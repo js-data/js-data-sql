@@ -26,9 +26,6 @@ var DSSqlAdapter = require('js-data-sql');
 
 var store = new JSData.DS();
 
-// "r" will be available at adapter.r
-var adapter = new DSSqlAdapter();
-
 store.registerAdapter('sql', adapter, { default: true });
 
 // "store" will now use the Sql adapter for all async operations
