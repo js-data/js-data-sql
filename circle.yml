@@ -1,0 +1,6 @@
+database:
+  override:
+    - mysql -u ubuntu circle_test < test/setup.sql
+test:
+  post:
+    - grunt coveralls || true

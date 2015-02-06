@@ -25,6 +25,14 @@ var JSData = require('js-data');
 var DSSqlAdapter = require('js-data-sql');
 
 var store = new JSData.DS();
+var adapter = new DSSqlAdapter({
+  client: 'mysql', // or "pg" or "sqlite3"
+  connection: {
+    host: '123.45.67.890',
+    user: 'ubuntu',
+    password: 'welcome1234'
+  }
+});
 
 store.registerAdapter('sql', adapter, { default: true });
 
