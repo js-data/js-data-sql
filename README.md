@@ -12,7 +12,7 @@ Postgres/MySQL/MariaDB/SQLite3 adapter for [js-data](http://www.js-data.io/).
 | Branch | Master |
 | ------ | ------ |
 | NPM | [![NPM version](https://badge.fury.io/js/js-data-sql.png)](http://badge.fury.io/js/js-data-sql) |
-| Build Status | [![Build Status](https://travis-ci.org/js-data/js-data-sql.png?branch=master)](https://travis-ci.org/js-data/js-data-sql) |
+| Build Status | [![Circle CI](https://circleci.com/gh/js-data/js-data-sql.svg?style=svg)](https://circleci.com/gh/js-data/js-data-sql) |
 | Code Climate | [![Code Climate](https://codeclimate.com/github/js-data/js-data-sql.png)](https://codeclimate.com/github/js-data/js-data-sql) |
 | Dependency Status | [![Dependency Status](https://gemnasium.com/js-data/js-data-sql.png)](https://gemnasium.com/js-data/js-data-sql) |
 | Coverage | [![Coverage Status](https://coveralls.io/repos/js-data/js-data-sql/badge.png?branch=master)](https://coveralls.io/r/js-data/js-data-sql?branch=master) |
