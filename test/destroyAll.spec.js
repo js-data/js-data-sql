@@ -1,7 +1,7 @@
 describe('DSSqlAdapter#destroyAll', function () {
-  it('should destroy all items', function (done) {
+  it('should destroy all items', function () {
     var id;
-    adapter.create(User, { name: 'John' })
+    return adapter.create(User, { name: 'John' })
       .then(function (user) {
         id = user.id;
         return adapter.findAll(User, {
@@ -19,7 +19,6 @@ describe('DSSqlAdapter#destroyAll', function () {
         });
       }).then(function (users) {
         assert.equal(users.length, 0);
-        done();
-      }).catch(done);
+      });
   });
 });

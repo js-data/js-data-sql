@@ -1,5 +1,6 @@
 var knex = require('knex');
 var JSData = require('js-data');
+var P = JSData.DSUtils.Promise;
 var contains = require('mout/array/contains');
 var forOwn = require('mout/object/forOwn');
 var keys = require('mout/object/keys');
@@ -146,7 +147,7 @@ dsSqlAdapterPrototype.find = function find(resourceConfig, id, options) {
     .where(resourceConfig.idAttribute, toString(id))
     .then(function (rows) {
       if (!rows.length) {
-        throw new Error('Not Found!');
+        return P.reject(new Error('Not Found!'));
       } else {
         instance = rows[0];
         var tasks = [];
@@ -186,7 +187,7 @@ dsSqlAdapterPrototype.find = function find(resourceConfig, id, options) {
           }
         });
 
-        return JSData.DSUtils.Promise.all(tasks);
+        return P.all(tasks);
       }
     })
     .then(function (loadedRelations) {

@@ -1,7 +1,7 @@
 describe('DSSqlAdapter#find', function () {
-  it('should find a user in a Sql db', function (done) {
+  it('should find a user in a Sql db', function () {
     var id, id2, _user, _post, _comments;
-    adapter.create(User, { name: 'John' })
+    return adapter.create(User, { name: 'John' })
       .then(function (user) {
         _user = user;
         id = user.id;
@@ -63,11 +63,10 @@ describe('DSSqlAdapter#find', function () {
         return adapter.find(User, id);
       })
       .then(function () {
-        done('Should not have reached here!');
+        throw new Error('Should not have reached here!');
       })
       .catch(function (err) {
         assert.equal(err.message, 'Not Found!');
-        done();
       });
   });
 });
