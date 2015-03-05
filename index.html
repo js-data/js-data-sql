@@ -1,0 +1,168 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Js-data-sql by js-data</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Js-data-sql</h1>
+        <p>Postgres/MySQL/MariaDB/SQLite3 adapter for js-data</p>
+
+        <p class="view"><a href="https://github.com/js-data/js-data-sql">View the Project on GitHub <small>js-data/js-data-sql</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/js-data/js-data-sql/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/js-data/js-data-sql/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/js-data/js-data-sql">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <p><img src="https://raw.githubusercontent.com/js-data/js-data/master/js-data.png" alt="js-data logo" title="js-data" align="right" width="64" height="64"></p>
+
+<h2>
+<a id="js-data-sql-" class="anchor" href="#js-data-sql-" aria-hidden="true"><span class="octicon octicon-link"></span></a>js-data-sql <a href="http://badge.fury.io/js/js-data-sql"><img src="https://badge.fury.io/js/js-data-sql.png" alt="NPM version"></a>
+</h2>
+
+<p>Postgres/MySQL/MariaDB/SQLite3 adapter for <a href="http://www.js-data.io/">js-data</a>.</p>
+
+<h2>
+<a id="api-documentation" class="anchor" href="#api-documentation" aria-hidden="true"><span class="octicon octicon-link"></span></a>API Documentation</h2>
+
+<p><a href="http://www.js-data.io/docs/dssqladapter">DSSqlAdapter</a></p>
+
+<h2>
+<a id="project-status" class="anchor" href="#project-status" aria-hidden="true"><span class="octicon octicon-link"></span></a>Project Status</h2>
+
+<table>
+<thead>
+<tr>
+<th>Branch</th>
+<th>Master</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NPM</td>
+<td><a href="https://nodei.co/npm/js-data-sql/"><img src="https://nodei.co/npm/js-data-sql.png?downloads=true&amp;stars=true" alt="NPM"></a></td>
+</tr>
+<tr>
+<td>Build Status</td>
+<td><a href="https://circleci.com/gh/js-data/js-data-sql"><img src="https://circleci.com/gh/js-data/js-data-sql.svg?style=svg" alt="Circle CI"></a></td>
+</tr>
+<tr>
+<td>Code Climate</td>
+<td><a href="https://codeclimate.com/github/js-data/js-data-sql"><img src="https://codeclimate.com/github/js-data/js-data-sql.png" alt="Code Climate"></a></td>
+</tr>
+<tr>
+<td>Dependency Status</td>
+<td><a href="https://gemnasium.com/js-data/js-data-sql"><img src="https://gemnasium.com/js-data/js-data-sql.png" alt="Dependency Status"></a></td>
+</tr>
+<tr>
+<td>Coverage</td>
+<td><a href="https://coveralls.io/r/js-data/js-data-sql?branch=master"><img src="https://coveralls.io/repos/js-data/js-data-sql/badge.png?branch=master" alt="Coverage Status"></a></td>
+</tr>
+</tbody>
+</table>
+
+<h2>
+<a id="quick-start" class="anchor" href="#quick-start" aria-hidden="true"><span class="octicon octicon-link"></span></a>Quick Start</h2>
+
+<p><code>npm install --save js-data js-data-sql</code>.</p>
+
+<div class="highlight highlight-js"><pre><span class="pl-s">var</span> JSData <span class="pl-k">=</span> <span class="pl-s3">require</span>(<span class="pl-s1"><span class="pl-pds">'</span>js-data<span class="pl-pds">'</span></span>);
+<span class="pl-s">var</span> DSSqlAdapter <span class="pl-k">=</span> <span class="pl-s3">require</span>(<span class="pl-s1"><span class="pl-pds">'</span>js-data-sql<span class="pl-pds">'</span></span>);
+
+<span class="pl-s">var</span> store <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">JSData.DS</span>();
+<span class="pl-s">var</span> adapter <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">DSSqlAdapter</span>({
+  client<span class="pl-k">:</span> <span class="pl-s1"><span class="pl-pds">'</span>mysql<span class="pl-pds">'</span></span>, <span class="pl-c">// or "pg" or "sqlite3"</span>
+  connection<span class="pl-k">:</span> {
+    host<span class="pl-k">:</span> <span class="pl-s1"><span class="pl-pds">'</span>123.45.67.890<span class="pl-pds">'</span></span>,
+    user<span class="pl-k">:</span> <span class="pl-s1"><span class="pl-pds">'</span>ubuntu<span class="pl-pds">'</span></span>,
+    password<span class="pl-k">:</span> <span class="pl-s1"><span class="pl-pds">'</span>welcome1234<span class="pl-pds">'</span></span>
+  }
+});
+
+store.registerAdapter(<span class="pl-s1"><span class="pl-pds">'</span>sql<span class="pl-pds">'</span></span>, adapter, { <span class="pl-k">default</span><span class="pl-k">:</span> <span class="pl-c1">true</span> });
+
+<span class="pl-c">// "store" will now use the Sql adapter for all async operations</span></pre></div>
+
+<h2>
+<a id="changelog" class="anchor" href="#changelog" aria-hidden="true"><span class="octicon octicon-link"></span></a>Changelog</h2>
+
+<p><a href="https://github.com/js-data/js-data-sql/blob/master/CHANGELOG.md">CHANGELOG.md</a></p>
+
+<h2>
+<a id="community" class="anchor" href="#community" aria-hidden="true"><span class="octicon octicon-link"></span></a>Community</h2>
+
+<ul>
+<li>
+<a href="https://groups.io/org/groupsio/jsdata">Mailing List</a> - Ask your questions!</li>
+<li>
+<a href="https://github.com/js-data/js-data-sql/issues">Issues</a> - Found a bug? Feature request? Submit an issue!</li>
+<li>
+<a href="https://github.com/js-data/js-data-sql">GitHub</a> - View the source code for js-data.</li>
+<li><a href="https://github.com/js-data/js-data-sql/blob/master/CONTRIBUTING.md">Contributing Guide</a></li>
+</ul>
+
+<h2>
+<a id="contributing" class="anchor" href="#contributing" aria-hidden="true"><span class="octicon octicon-link"></span></a>Contributing</h2>
+
+<p>First, feel free to contact me with questions. <a href="https://groups.io/org/groupsio/jsdata">Mailing List</a>. <a href="https://github.com/js-data/js-data-sql/issues">Issues</a>.</p>
+
+<ol>
+<li>Contribute to the issue that is the reason you'll be developing in the first place</li>
+<li>Fork js-data-sql</li>
+<li><code>git clone https://github.com/&lt;you&gt;/js-data-sql.git</code></li>
+<li><code>cd js-data-sql; npm install; bower install;</code></li>
+<li>
+<code>grunt go</code> (builds and starts a watch)</li>
+<li>(in another terminal) <code>grunt karma:dev</code> (runs the tests)</li>
+<li>Write your code, including relevant documentation and tests</li>
+<li>Submit a PR and we'll review</li>
+</ol>
+
+<h2>
+<a id="license" class="anchor" href="#license" aria-hidden="true"><span class="octicon octicon-link"></span></a>License</h2>
+
+<p>The MIT License (MIT)</p>
+
+<p>Copyright (c) 2014-2015 Jason Dobry</p>
+
+<p>Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:</p>
+
+<p>The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.</p>
+
+<p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.</p>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/js-data">js-data</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
