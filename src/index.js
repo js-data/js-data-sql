@@ -1,20 +1,20 @@
-var knex = require('knex');
-var JSData = require('js-data');
-var P = JSData.DSUtils.Promise;
-var contains = require('mout/array/contains');
-var forOwn = require('mout/object/forOwn');
-var keys = require('mout/object/keys');
-var deepMixIn = require('mout/object/deepMixIn');
-var forEach = require('mout/array/forEach');
-var isObject = require('mout/lang/isObject');
-var map = require('mout/array/map');
-var isEmpty = require('mout/lang/isEmpty');
-var isString = require('mout/lang/isString');
-var upperCase = require('mout/string/upperCase');
-var underscore = require('mout/string/underscore');
-var toString = require('mout/lang/toString');
+let knex = require('knex');
+let JSData = require('js-data');
+let map = require('mout/array/map');
+let keys = require('mout/object/keys');
+let isEmpty = require('mout/lang/isEmpty');
+let upperCase = require('mout/string/upperCase');
+let underscore = require('mout/string/underscore');
+let toString = require('mout/lang/toString');
+let P = JSData.DSUtils.Promise;
+let contains = JSData.DSUtils.contains;
+let forOwn = JSData.DSUtils.forOwn;
+let deepMixIn = JSData.DSUtils.deepMixIn;
+let forEach = JSData.DSUtils.forEach;
+let isObject = JSData.DSUtils.isObject;
+let isString = JSData.DSUtils.isString;
 
-var reserved = [
+let reserved = [
   'orderBy',
   'sort',
   'limit',
@@ -23,26 +23,15 @@ var reserved = [
   'where'
 ];
 
-function DSSqlAdapter(options) {
-  options = options || {};
-  if (options.__knex__) {
-    this.query = options;
-  } else {
-    this.query = knex(options);
-  }
-  deepMixIn(this.defaults, options);
-}
-
-function filterQuery(resourceConfig, params, options) {
-  var query = this.query.select('*').from(resourceConfig.table || underscore(resourceConfig.name));
+function filterQuery(resourceConfig, params) {
+  let query = this.query.select('*').from(resourceConfig.table || underscore(resourceConfig.name));
   params = params || {};
-  options = options || {};
   params.where = params.where || {};
   params.orderBy = params.orderBy || params.sort;
   params.skip = params.skip || params.offset;
 
-  forEach(keys(params), function (k) {
-    var v = params[k];
+  forEach(keys(params), k => {
+    let v = params[k];
     if (!contains(reserved, k)) {
       if (isObject(v)) {
         params.where[k] = v;
@@ -56,13 +45,13 @@ function filterQuery(resourceConfig, params, options) {
   });
 
   if (!isEmpty(params.where)) {
-    forOwn(params.where, function (criteria, field) {
+    forOwn(params.where, (criteria, field) => {
       if (!isObject(criteria)) {
         params.where[field] = {
           '==': criteria
         };
       }
-      forOwn(criteria, function (v, op) {
+      forOwn(criteria, (v, op) => {
         if (op === '==' || op === '===') {
           query = query.where(field, v);
         } else if (op === '!=' || op === '!==') {
@@ -133,128 +122,128 @@ function filterQuery(resourceConfig, params, options) {
   return query;
 }
 
-var dsSqlAdapterPrototype = DSSqlAdapter.prototype;
+class DSSqlAdapter {
+  constructor(options) {
+    options = options || {};
+    if (options.__knex__) {
+      this.query = options;
+    } else {
+      this.query = knex(options);
+    }
+    deepMixIn(this.defaults, options);
+  }
 
-dsSqlAdapterPrototype.find = function find(resourceConfig, id, options) {
-  var _this = this;
-  var instance;
-  var fields = [];
-  options = options || {};
-  options.with = options.with || [];
-  return _this.query
-    .select('*')
-    .from(resourceConfig.table || underscore(resourceConfig.name))
-    .where(resourceConfig.idAttribute, toString(id))
-    .then(function (rows) {
-      if (!rows.length) {
-        return P.reject(new Error('Not Found!'));
-      } else {
-        instance = rows[0];
-        var tasks = [];
+  find(resourceConfig, id, options) {
+    let _this = this;
+    let instance;
+    let fields = [];
+    options = options || {};
+    options.with = options.with || [];
+    return _this.query
+      .select('*')
+      .from(resourceConfig.table || underscore(resourceConfig.name))
+      .where(resourceConfig.idAttribute, toString(id))
+      .then(rows => {
+        if (!rows.length) {
+          return P.reject(new Error('Not Found!'));
+        } else {
+          instance = rows[0];
+          let tasks = [];
 
-        forEach(resourceConfig.relationList, function (def) {
-          var relationName = def.relation;
-          if (contains(options.with, relationName)) {
-            var task;
-            var params = {};
-            if (resourceConfig.allowSimpleWhere) {
-              params[def.foreignKey] = instance[resourceConfig.idAttribute];
-            } else {
-              params.where = {};
-              params.where[def.foreignKey] = {
-                '==': instance[resourceConfig.idAttribute]
-              };
-            }
-
-            if (def.type === 'hasMany' && params[def.foreignKey]) {
-              task = _this.findAll(resourceConfig.getResource(relationName), params, options);
-            } else if (def.type === 'hasOne') {
-              if (def.localKey && instance[def.localKey]) {
-                task = _this.find(resourceConfig.getResource(relationName), instance[def.localKey], options);
-              } else if (def.foreignKey && params[def.foreignKey]) {
-                task = _this.findAll(resourceConfig.getResource(relationName), params, options).then(function (hasOnes) {
-                  return hasOnes.length ? hasOnes[0] : null;
-                });
+          forEach(resourceConfig.relationList, def => {
+            let relationName = def.relation;
+            if (contains(options.with, relationName)) {
+              let task;
+              let params = {};
+              if (resourceConfig.allowSimpleWhere) {
+                params[def.foreignKey] = instance[resourceConfig.idAttribute];
+              } else {
+                params.where = {};
+                params.where[def.foreignKey] = {
+                  '==': instance[resourceConfig.idAttribute]
+                };
               }
-            } else if (instance[def.localKey]) {
-              task = _this.find(resourceConfig.getResource(relationName), instance[def.localKey], options);
-            }
 
-            if (task) {
-              tasks.push(task);
-              fields.push(def.localField);
-            }
-          }
-        });
+              if (def.type === 'hasMany' && params[def.foreignKey]) {
+                task = _this.findAll(resourceConfig.getResource(relationName), params, options);
+              } else if (def.type === 'hasOne') {
+                if (def.localKey && instance[def.localKey]) {
+                  task = _this.find(resourceConfig.getResource(relationName), instance[def.localKey], options);
+                } else if (def.foreignKey && params[def.foreignKey]) {
+                  task = _this.findAll(resourceConfig.getResource(relationName), params, options).then(hasOnes => {
+                    return hasOnes.length ? hasOnes[0] : null;
+                  });
+                }
+              } else if (instance[def.localKey]) {
+                task = _this.find(resourceConfig.getResource(relationName), instance[def.localKey], options);
+              }
 
-        return P.all(tasks);
-      }
-    })
-    .then(function (loadedRelations) {
-      forEach(fields, function (field, index) {
-        instance[field] = loadedRelations[index];
+              if (task) {
+                tasks.push(task);
+                fields.push(def.localField);
+              }
+            }
+          });
+
+          return P.all(tasks);
+        }
+      })
+      .then(loadedRelations => {
+        forEach(fields, (field, index) => instance[field] = loadedRelations[index]);
+        return instance;
       });
-      return instance;
+  }
+
+  findAll(resourceConfig, params, options) {
+    return filterQuery.call(this, resourceConfig, params, options);
+  }
+
+  create(resourceConfig, attrs) {
+    let _this = this;
+    return _this.query(resourceConfig.table || underscore(resourceConfig.name))
+      .insert(attrs)
+      .then(ids => {
+        if (ids.length) {
+          return _this.find(resourceConfig, ids[0]);
+        } else {
+          throw new Error('Failed to create!');
+        }
+      });
+  }
+
+  update(resourceConfig, id, attrs) {
+    let _this = this;
+    return _this.query(resourceConfig.table || underscore(resourceConfig.name))
+      .where(resourceConfig.idAttribute, toString(id))
+      .update(attrs)
+      .then(() => _this.find(resourceConfig, id));
+  }
+
+  updateAll(resourceConfig, attrs, params, options) {
+    let _this = this;
+    return filterQuery.call(_this, resourceConfig, params, options).then(items => {
+      return map(items, item => item[resourceConfig.idAttribute]);
+    }).then(ids => {
+      return filterQuery.call(_this, resourceConfig, params, options).update(attrs).then(() => {
+        let _params = { where: {} };
+        _params.where[resourceConfig.idAttribute] = {
+          'in': ids
+        };
+        return filterQuery.call(_this, resourceConfig, _params, options);
+      });
     });
-};
+  }
 
-dsSqlAdapterPrototype.findAll = function (resourceConfig, params, options) {
-  return filterQuery.call(this, resourceConfig, params, options);
-};
+  destroy(resourceConfig, id) {
+    let _this = this;
+    return _this.query(resourceConfig.table || underscore(resourceConfig.name))
+      .where(resourceConfig.idAttribute, toString(id))
+      .del().then(() => undefined);
+  }
 
-dsSqlAdapterPrototype.create = function (resourceConfig, attrs) {
-  var _this = this;
-  return _this.query(resourceConfig.table || underscore(resourceConfig.name))
-    .insert(attrs)
-    .then(function (ids) {
-      if (!ids.length) {
-        throw new Error('Failed to create!');
-      } else {
-        return _this.find(resourceConfig, ids[0]);
-      }
-    });
-};
+  destroyAll(resourceConfig, params, options) {
+    return filterQuery.call(this, resourceConfig, params, options).del().then(() => undefined);
+  }
+}
 
-dsSqlAdapterPrototype.update = function (resourceConfig, id, attrs) {
-  var _this = this;
-  return _this.query(resourceConfig.table || underscore(resourceConfig.name))
-    .where(resourceConfig.idAttribute, toString(id))
-    .update(attrs)
-    .then(function () {
-      return _this.find(resourceConfig, id);
-    });
-};
-
-dsSqlAdapterPrototype.updateAll = function (resourceConfig, attrs, params, options) {
-  var _this = this;
-  return filterQuery.call(_this, resourceConfig, params, options).then(function (items) {
-    return map(items, function (item) {
-      return item[resourceConfig.idAttribute];
-    });
-  }).then(function (ids) {
-    return filterQuery.call(_this, resourceConfig, params, options).update(attrs).then(function () {
-      var _params = { where: {} };
-      _params.where[resourceConfig.idAttribute] = {
-        'in': ids
-      };
-      return filterQuery.call(_this, resourceConfig, _params, options);
-    });
-  });
-};
-
-dsSqlAdapterPrototype.destroy = function (resourceConfig, id) {
-  var _this = this;
-  return _this.query(resourceConfig.table || underscore(resourceConfig.name))
-    .where(resourceConfig.idAttribute, toString(id))
-    .del().then(function () {
-      return undefined;
-    });
-};
-
-dsSqlAdapterPrototype.destroyAll = function (resourceConfig, params, options) {
-  return filterQuery.call(this, resourceConfig, params, options).del().then(function () {
-    return undefined;
-  });
-};
-
-module.exports = DSSqlAdapter;
+export default DSSqlAdapter;
