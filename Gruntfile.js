@@ -1,6 +1,6 @@
 /*
  * js-data-sql
- * http://github.com/js-data/js-data-sql
+ * https://github.com/js-data/js-data-sql
  *
  * Copyright (c) 2014-2015 Jason Dobry <http://www.js-data.io/docs/dssqladapter>
  * Licensed under the MIT license. <https://github.com/js-data/js-data-sql/blob/master/LICENSE>
