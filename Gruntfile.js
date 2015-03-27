@@ -54,6 +54,7 @@ module.exports = function (grunt) {
           'mout/lang/toString',
           'mout/string/upperCase',
           'mout/string/underscore',
+          'mout/object/omit',
           'js-data',
           'js-data-schema',
           'knex'
