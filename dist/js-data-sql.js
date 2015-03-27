@@ -45,25 +45,39 @@ module.exports =
 /* 0 */
 /***/ function(module, exports, __webpack_require__) {
 
+	var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
+
 	var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 	var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
 
-	var knex = __webpack_require__(1);
-	var JSData = __webpack_require__(2);
-	var map = __webpack_require__(3);
-	var keys = __webpack_require__(4);
-	var isEmpty = __webpack_require__(5);
-	var upperCase = __webpack_require__(6);
-	var underscore = __webpack_require__(7);
-	var toString = __webpack_require__(8);
-	var P = JSData.DSUtils.Promise;
-	var contains = JSData.DSUtils.contains;
-	var forOwn = JSData.DSUtils.forOwn;
-	var deepMixIn = JSData.DSUtils.deepMixIn;
-	var forEach = JSData.DSUtils.forEach;
-	var isObject = JSData.DSUtils.isObject;
-	var isString = JSData.DSUtils.isString;
+	var knex = _interopRequire(__webpack_require__(1));
+
+	var JSData = _interopRequire(__webpack_require__(2));
+
+	var map = _interopRequire(__webpack_require__(3));
+
+	var keys = _interopRequire(__webpack_require__(4));
+
+	var omit = _interopRequire(__webpack_require__(9));
+
+	var isEmpty = _interopRequire(__webpack_require__(5));
+
+	var upperCase = _interopRequire(__webpack_require__(6));
+
+	var underscore = _interopRequire(__webpack_require__(7));
+
+	var toString = _interopRequire(__webpack_require__(8));
+
+	var DSUtils = JSData.DSUtils;
+	var P = DSUtils.Promise;
+	var contains = DSUtils.contains;
+	var forOwn = DSUtils.forOwn;
+	var deepMixIn = DSUtils.deepMixIn;
+	var forEach = DSUtils.forEach;
+	var isObject = DSUtils.isObject;
+	var isString = DSUtils.isString;
+	var removeCircular = DSUtils.removeCircular;
 
 	var reserved = ["orderBy", "sort", "limit", "offset", "skip", "where"];
 
@@ -181,11 +195,12 @@ module.exports =
 	    find: {
 	      value: function find(resourceConfig, id, options) {
 	        var _this = this;
+
 	        var instance = undefined;
 	        var fields = [];
 	        options = options || {};
 	        options["with"] = options["with"] || [];
-	        return _this.query.select("*").from(resourceConfig.table || underscore(resourceConfig.name)).where(resourceConfig.idAttribute, toString(id)).then(function (rows) {
+	        return this.query.select("*").from(resourceConfig.table || underscore(resourceConfig.name)).where(resourceConfig.idAttribute, toString(id)).then(function (rows) {
 	          if (!rows.length) {
 	            return P.reject(new Error("Not Found!"));
 	          } else {
@@ -251,7 +266,9 @@ module.exports =
 	    create: {
 	      value: function create(resourceConfig, attrs) {
 	        var _this = this;
-	        return _this.query(resourceConfig.table || underscore(resourceConfig.name)).insert(attrs).then(function (ids) {
+
+	        attrs = removeCircular(omit(attrs, resourceConfig.relationFields || []));
+	        return this.query(resourceConfig.table || underscore(resourceConfig.name)).insert(attrs).then(function (ids) {
 	          if (ids.length) {
 	            return _this.find(resourceConfig, ids[0]);
 	          } else {
@@ -263,7 +280,9 @@ module.exports =
 	    update: {
 	      value: function update(resourceConfig, id, attrs) {
 	        var _this = this;
-	        return _this.query(resourceConfig.table || underscore(resourceConfig.name)).where(resourceConfig.idAttribute, toString(id)).update(attrs).then(function () {
+
+	        attrs = removeCircular(omit(attrs, resourceConfig.relationFields || []));
+	        return this.query(resourceConfig.table || underscore(resourceConfig.name)).where(resourceConfig.idAttribute, toString(id)).update(attrs).then(function () {
 	          return _this.find(resourceConfig, id);
 	        });
 	      }
@@ -271,7 +290,9 @@ module.exports =
 	    updateAll: {
 	      value: function updateAll(resourceConfig, attrs, params, options) {
 	        var _this = this;
-	        return filterQuery.call(_this, resourceConfig, params, options).then(function (items) {
+
+	        attrs = removeCircular(omit(attrs, resourceConfig.relationFields || []));
+	        return filterQuery.call(this, resourceConfig, params, options).then(function (items) {
 	          return map(items, function (item) {
 	            return item[resourceConfig.idAttribute];
 	          });
@@ -288,8 +309,7 @@ module.exports =
 	    },
 	    destroy: {
 	      value: function destroy(resourceConfig, id) {
-	        var _this = this;
-	        return _this.query(resourceConfig.table || underscore(resourceConfig.name)).where(resourceConfig.idAttribute, toString(id)).del().then(function () {
+	        return this.query(resourceConfig.table || underscore(resourceConfig.name)).where(resourceConfig.idAttribute, toString(id)).del().then(function () {
 	          return undefined;
 	        });
 	      }
@@ -355,6 +375,124 @@ module.exports =
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = require("mout/lang/toString");
+
+/***/ },
+/* 9 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var slice = __webpack_require__(10);
+	var contains = __webpack_require__(11);
+
+	    /**
+	     * Return a copy of the object, filtered to only contain properties except the blacklisted keys.
+	     */
+	    function omit(obj, var_keys){
+	        var keys = typeof arguments[1] !== 'string'? arguments[1] : slice(arguments, 1),
+	            out = {};
+
+	        for (var property in obj) {
+	            if (obj.hasOwnProperty(property) && !contains(keys, property)) {
+	                out[property] = obj[property];
+	            }
+	        }
+	        return out;
+	    }
+
+	    module.exports = omit;
+
+
+
+
+/***/ },
+/* 10 */
+/***/ function(module, exports, __webpack_require__) {
+
+	
+
+	    /**
+	     * Create slice of source array or array-like object
+	     */
+	    function slice(arr, start, end){
+	        var len = arr.length;
+
+	        if (start == null) {
+	            start = 0;
+	        } else if (start < 0) {
+	            start = Math.max(len + start, 0);
+	        } else {
+	            start = Math.min(start, len);
+	        }
+
+	        if (end == null) {
+	            end = len;
+	        } else if (end < 0) {
+	            end = Math.max(len + end, 0);
+	        } else {
+	            end = Math.min(end, len);
+	        }
+
+	        var result = [];
+	        while (start < end) {
+	            result.push(arr[start++]);
+	        }
+
+	        return result;
+	    }
+
+	    module.exports = slice;
+
+
+
+
+/***/ },
+/* 11 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var indexOf = __webpack_require__(12);
+
+	    /**
+	     * If array contains values.
+	     */
+	    function contains(arr, val) {
+	        return indexOf(arr, val) !== -1;
+	    }
+	    module.exports = contains;
+
+
+
+/***/ },
+/* 12 */
+/***/ function(module, exports, __webpack_require__) {
+
+	
+
+	    /**
+	     * Array.indexOf
+	     */
+	    function indexOf(arr, item, fromIndex) {
+	        fromIndex = fromIndex || 0;
+	        if (arr == null) {
+	            return -1;
+	        }
+
+	        var len = arr.length,
+	            i = fromIndex < 0 ? len + fromIndex : fromIndex;
+	        while (i < len) {
+	            // we iterate over sparse items since there is no way to make it
+	            // work properly on IE 7-8. see #64
+	            if (arr[i] === item) {
+	                return i;
+	            }
+
+	            i++;
+	        }
+
+	        return -1;
+	    }
+
+	    module.exports = indexOf;
+
+
 
 /***/ }
 /******/ ]);

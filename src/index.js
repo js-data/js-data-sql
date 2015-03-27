@@ -1,18 +1,14 @@
-let knex = require('knex');
-let JSData = require('js-data');
-let map = require('mout/array/map');
-let keys = require('mout/object/keys');
-let isEmpty = require('mout/lang/isEmpty');
-let upperCase = require('mout/string/upperCase');
-let underscore = require('mout/string/underscore');
-let toString = require('mout/lang/toString');
-let P = JSData.DSUtils.Promise;
-let contains = JSData.DSUtils.contains;
-let forOwn = JSData.DSUtils.forOwn;
-let deepMixIn = JSData.DSUtils.deepMixIn;
-let forEach = JSData.DSUtils.forEach;
-let isObject = JSData.DSUtils.isObject;
-let isString = JSData.DSUtils.isString;
+import knex from 'knex';
+import JSData from 'js-data';
+import map from 'mout/array/map';
+import keys from 'mout/object/keys';
+import omit from 'mout/object/omit';
+import isEmpty from 'mout/lang/isEmpty';
+import upperCase from 'mout/string/upperCase';
+import underscore from 'mout/string/underscore';
+import toString from 'mout/lang/toString';
+let { DSUtils } = JSData;
+let { Promise: P, contains, forOwn, deepMixIn, forEach, isObject, isString, removeCircular } = DSUtils;
 
 let reserved = [
   'orderBy',
@@ -134,12 +130,11 @@ class DSSqlAdapter {
   }
 
   find(resourceConfig, id, options) {
-    let _this = this;
     let instance;
     let fields = [];
     options = options || {};
     options.with = options.with || [];
-    return _this.query
+    return this.query
       .select('*')
       .from(resourceConfig.table || underscore(resourceConfig.name))
       .where(resourceConfig.idAttribute, toString(id))
@@ -165,17 +160,17 @@ class DSSqlAdapter {
               }
 
               if (def.type === 'hasMany' && params[def.foreignKey]) {
-                task = _this.findAll(resourceConfig.getResource(relationName), params, options);
+                task = this.findAll(resourceConfig.getResource(relationName), params, options);
               } else if (def.type === 'hasOne') {
                 if (def.localKey && instance[def.localKey]) {
-                  task = _this.find(resourceConfig.getResource(relationName), instance[def.localKey], options);
+                  task = this.find(resourceConfig.getResource(relationName), instance[def.localKey], options);
                 } else if (def.foreignKey && params[def.foreignKey]) {
-                  task = _this.findAll(resourceConfig.getResource(relationName), params, options).then(hasOnes => {
+                  task = this.findAll(resourceConfig.getResource(relationName), params, options).then(hasOnes => {
                     return hasOnes.length ? hasOnes[0] : null;
                   });
                 }
               } else if (instance[def.localKey]) {
-                task = _this.find(resourceConfig.getResource(relationName), instance[def.localKey], options);
+                task = this.find(resourceConfig.getResource(relationName), instance[def.localKey], options);
               }
 
               if (task) {
@@ -199,12 +194,12 @@ class DSSqlAdapter {
   }
 
   create(resourceConfig, attrs) {
-    let _this = this;
-    return _this.query(resourceConfig.table || underscore(resourceConfig.name))
+    attrs = removeCircular(omit(attrs, resourceConfig.relationFields || []));
+    return this.query(resourceConfig.table || underscore(resourceConfig.name))
       .insert(attrs)
       .then(ids => {
         if (ids.length) {
-          return _this.find(resourceConfig, ids[0]);
+          return this.find(resourceConfig, ids[0]);
         } else {
           throw new Error('Failed to create!');
         }
@@ -212,31 +207,30 @@ class DSSqlAdapter {
   }
 
   update(resourceConfig, id, attrs) {
-    let _this = this;
-    return _this.query(resourceConfig.table || underscore(resourceConfig.name))
+    attrs = removeCircular(omit(attrs, resourceConfig.relationFields || []));
+    return this.query(resourceConfig.table || underscore(resourceConfig.name))
       .where(resourceConfig.idAttribute, toString(id))
       .update(attrs)
-      .then(() => _this.find(resourceConfig, id));
+      .then(() => this.find(resourceConfig, id));
   }
 
   updateAll(resourceConfig, attrs, params, options) {
-    let _this = this;
-    return filterQuery.call(_this, resourceConfig, params, options).then(items => {
+    attrs = removeCircular(omit(attrs, resourceConfig.relationFields || []));
+    return filterQuery.call(this, resourceConfig, params, options).then(items => {
       return map(items, item => item[resourceConfig.idAttribute]);
     }).then(ids => {
-      return filterQuery.call(_this, resourceConfig, params, options).update(attrs).then(() => {
+      return filterQuery.call(this, resourceConfig, params, options).update(attrs).then(() => {
         let _params = { where: {} };
         _params.where[resourceConfig.idAttribute] = {
           'in': ids
         };
-        return filterQuery.call(_this, resourceConfig, _params, options);
+        return filterQuery.call(this, resourceConfig, _params, options);
       });
     });
   }
 
   destroy(resourceConfig, id) {
-    let _this = this;
-    return _this.query(resourceConfig.table || underscore(resourceConfig.name))
+    return this.query(resourceConfig.table || underscore(resourceConfig.name))
       .where(resourceConfig.idAttribute, toString(id))
       .del().then(() => undefined);
   }
