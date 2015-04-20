@@ -23,7 +23,7 @@ describe('DSSqlAdapter#findAll', function () {
   it('should filter users using the "in" operator', function () {
     var id;
 
-    adapter.findAll(User, {
+    return adapter.findAll(User, {
       where: {
         age: {
           'in': [30]
@@ -44,5 +44,19 @@ describe('DSSqlAdapter#findAll', function () {
     }).then(function (destroyedUser) {
       assert.isFalse(!!destroyedUser);
     });
+  });
+  it('should throw "Operator not found" error', function () {
+    var op = '>=<';
+
+    assert.throw(function () {
+      return adapter.findAll(User, {
+        where: {
+          name: {
+            op: 'John'
+          }
+        }
+      });
+    }
+    , Error, 'Operator not found');
   });
 });
