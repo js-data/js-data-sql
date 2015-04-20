@@ -59,15 +59,15 @@ module.exports =
 
 	var keys = _interopRequire(__webpack_require__(4));
 
-	var omit = _interopRequire(__webpack_require__(9));
+	var omit = _interopRequire(__webpack_require__(5));
 
-	var isEmpty = _interopRequire(__webpack_require__(5));
+	var isEmpty = _interopRequire(__webpack_require__(6));
 
-	var upperCase = _interopRequire(__webpack_require__(6));
+	var upperCase = _interopRequire(__webpack_require__(7));
 
-	var underscore = _interopRequire(__webpack_require__(7));
+	var underscore = _interopRequire(__webpack_require__(8));
 
-	var toString = _interopRequire(__webpack_require__(8));
+	var toString = _interopRequire(__webpack_require__(9));
 
 	var DSUtils = JSData.DSUtils;
 	var P = DSUtils.Promise;
@@ -150,6 +150,8 @@ module.exports =
 	          query = query.orWhere(field, "in", v);
 	        } else if (op === "|notIn") {
 	          query = query.orWhereNotIn(field, v);
+	        } else {
+	          throw new Error("Operator not found");
 	        }
 	      });
 	    });
@@ -356,143 +358,31 @@ module.exports =
 /* 5 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = require("mout/lang/isEmpty");
+	module.exports = require("mout/object/omit");
 
 /***/ },
 /* 6 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = require("mout/string/upperCase");
+	module.exports = require("mout/lang/isEmpty");
 
 /***/ },
 /* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = require("mout/string/underscore");
+	module.exports = require("mout/string/upperCase");
 
 /***/ },
 /* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = require("mout/lang/toString");
+	module.exports = require("mout/string/underscore");
 
 /***/ },
 /* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var slice = __webpack_require__(10);
-	var contains = __webpack_require__(11);
-
-	    /**
-	     * Return a copy of the object, filtered to only contain properties except the blacklisted keys.
-	     */
-	    function omit(obj, var_keys){
-	        var keys = typeof arguments[1] !== 'string'? arguments[1] : slice(arguments, 1),
-	            out = {};
-
-	        for (var property in obj) {
-	            if (obj.hasOwnProperty(property) && !contains(keys, property)) {
-	                out[property] = obj[property];
-	            }
-	        }
-	        return out;
-	    }
-
-	    module.exports = omit;
-
-
-
-
-/***/ },
-/* 10 */
-/***/ function(module, exports, __webpack_require__) {
-
-	
-
-	    /**
-	     * Create slice of source array or array-like object
-	     */
-	    function slice(arr, start, end){
-	        var len = arr.length;
-
-	        if (start == null) {
-	            start = 0;
-	        } else if (start < 0) {
-	            start = Math.max(len + start, 0);
-	        } else {
-	            start = Math.min(start, len);
-	        }
-
-	        if (end == null) {
-	            end = len;
-	        } else if (end < 0) {
-	            end = Math.max(len + end, 0);
-	        } else {
-	            end = Math.min(end, len);
-	        }
-
-	        var result = [];
-	        while (start < end) {
-	            result.push(arr[start++]);
-	        }
-
-	        return result;
-	    }
-
-	    module.exports = slice;
-
-
-
-
-/***/ },
-/* 11 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var indexOf = __webpack_require__(12);
-
-	    /**
-	     * If array contains values.
-	     */
-	    function contains(arr, val) {
-	        return indexOf(arr, val) !== -1;
-	    }
-	    module.exports = contains;
-
-
-
-/***/ },
-/* 12 */
-/***/ function(module, exports, __webpack_require__) {
-
-	
-
-	    /**
-	     * Array.indexOf
-	     */
-	    function indexOf(arr, item, fromIndex) {
-	        fromIndex = fromIndex || 0;
-	        if (arr == null) {
-	            return -1;
-	        }
-
-	        var len = arr.length,
-	            i = fromIndex < 0 ? len + fromIndex : fromIndex;
-	        while (i < len) {
-	            // we iterate over sparse items since there is no way to make it
-	            // work properly on IE 7-8. see #64
-	            if (arr[i] === item) {
-	                return i;
-	            }
-
-	            i++;
-	        }
-
-	        return -1;
-	    }
-
-	    module.exports = indexOf;
-
-
+	module.exports = require("mout/lang/toString");
 
 /***/ }
 /******/ ]);

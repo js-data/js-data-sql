@@ -88,6 +88,8 @@ function filterQuery(resourceConfig, params) {
           query = query.orWhere(field, 'in', v);
         } else if (op === '|notIn') {
           query = query.orWhereNotIn(field, v);
+        } else {
+          throw new Error('Operator not found');
         }
       });
     });
