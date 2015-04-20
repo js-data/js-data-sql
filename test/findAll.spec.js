@@ -45,6 +45,35 @@ describe('DSSqlAdapter#findAll', function () {
       assert.isFalse(!!destroyedUser);
     });
   });
+  it('should filter users using the "like" operator', function () {
+    var id;
+
+    return adapter.findAll(User, {
+      where: {
+        name: {
+          'like': '%J%'
+        }
+      }
+    }).then(function (users) {
+      assert.equal(users.length, 0);
+      return adapter.create(User, { name: 'John' });
+    }).then(function (user) {
+      id = user.id;
+      return adapter.findAll(User, {
+        where: {
+          name: {
+            'like': '%J%'
+          }
+        }
+      });
+    }).then(function (users) {
+      assert.equal(users.length, 1);
+      assert.deepEqual(users[0], { id: id, name: 'John', age: null });
+      return adapter.destroy(User, id);
+    }).then(function (destroyedUser) {
+      assert.isFalse(!!destroyedUser);
+    });
+  });
   it('should throw "Operator not found" error', function () {
     var op = '>=<';
 
