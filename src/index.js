@@ -68,6 +68,8 @@ function filterQuery(resourceConfig, params) {
           query = query.where(field, 'in', v);
         } else if (op === 'notIn') {
           query = query.whereNotIn(field, v);
+        } else if (op === 'like') {
+          query = query.where(field, 'like', v);
         } else if (op === '|==' || op === '|===') {
           query = query.orWhere(field, v);
         } else if (op === '|!=' || op === '|!==') {
