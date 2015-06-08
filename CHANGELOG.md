@@ -1,3 +1,12 @@
+##### 0.5.0 - 08 June 2015
+
+###### Backwards compatible API changes
+- #4 - Add support for loading relations in find()
+- #8 - LIKE operator support
+
+###### Backwards compatible bug fixes
+- #9 - Throw error when using bad WHERE operator
+
 ##### 0.4.0 - 26 March 2015
 
 ###### Backwards compatible bug fixes
