@@ -1,7 +1,7 @@
 {
   "name": "js-data-sql",
   "description": "Postgres/MySQL/MariaDB/SQLite3 adapter for js-data.",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "homepage": "http://www.js-data.io/docs/dssqladapter",
   "repository": {
     "type": "git",
@@ -31,21 +31,21 @@
     "sqlite"
   ],
   "devDependencies": {
-    "babel-core": "4.7.16",
-    "babel-loader": "4.2.0",
-    "chai": "2.1.0",
+    "babel-core": "5.5.8",
+    "babel-loader": "5.1.4",
+    "chai": "3.0.0",
     "grunt": "0.4.5",
     "grunt-contrib-watch": "0.6.1",
     "grunt-karma-coveralls": "2.5.3",
     "grunt-mocha-test": "0.12.7",
     "grunt-webpack": "1.0.8",
     "jit-grunt": "0.9.1",
-    "jshint": "2.6.3",
+    "jshint": "2.8.0",
     "jshint-loader": "0.8.3",
-    "sinon": "1.12.2",
-    "time-grunt": "1.1.0",
-    "webpack": "1.7.3",
-    "webpack-dev-server": "1.7.0"
+    "sinon": "1.15.3",
+    "time-grunt": "1.2.1",
+    "webpack": "1.9.11",
+    "webpack-dev-server": "1.9.0"
   },
   "scripts": {
     "test": "grunt test"

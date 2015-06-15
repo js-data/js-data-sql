@@ -200,9 +200,11 @@ class DSSqlAdapter {
   create(resourceConfig, attrs) {
     attrs = removeCircular(omit(attrs, resourceConfig.relationFields || []));
     return this.query(resourceConfig.table || underscore(resourceConfig.name))
-      .insert(attrs)
+      .insert(attrs, resourceConfig.idAttribute)
       .then(ids => {
-        if (ids.length) {
+        if (attrs[resourceConfig.idAttribute]) {
+          return this.find(resourceConfig, attrs[resourceConfig.idAttribute]);
+        } else if (ids.length) {
           return this.find(resourceConfig, ids[0]);
         } else {
           throw new Error('Failed to create!');
@@ -224,7 +226,7 @@ class DSSqlAdapter {
       return map(items, item => item[resourceConfig.idAttribute]);
     }).then(ids => {
       return filterQuery.call(this, resourceConfig, params, options).update(attrs).then(() => {
-        let _params = { where: {} };
+        let _params = {where: {}};
         _params.where[resourceConfig.idAttribute] = {
           'in': ids
         };

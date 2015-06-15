@@ -1,3 +1,8 @@
+##### 0.6.0 - 15 June 2015
+
+###### Backwards compatible bug fixes
+- #12 - Create and Update don't work with non-numeric and/or primary keys
+
 ##### 0.5.0 - 08 June 2015
 
 ###### Backwards compatible API changes
