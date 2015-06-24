@@ -124,6 +124,7 @@ function filterQuery(resourceConfig, params) {
 
 class DSSqlAdapter {
   constructor(options) {
+    this.defaults = {};
     options = options || {};
     if (options.__knex__) {
       this.query = options;
