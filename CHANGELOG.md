@@ -1,3 +1,8 @@
+##### 0.6.1 - 24 June 2015
+
+###### Backwards compatible bug fixes
+- #13 - global leak (deepMixIn)
+
 ##### 0.6.0 - 15 June 2015
 
 ###### Backwards compatible bug fixes
