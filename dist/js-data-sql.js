@@ -186,6 +186,7 @@ module.exports =
 	  function DSSqlAdapter(options) {
 	    _classCallCheck(this, DSSqlAdapter);
 
+	    this.defaults = {};
 	    options = options || {};
 	    if (options.__knex__) {
 	      this.query = options;
