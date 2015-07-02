@@ -1,14 +1,10 @@
-import knex from 'knex';
-import JSData from 'js-data';
-import map from 'mout/array/map';
-import keys from 'mout/object/keys';
-import omit from 'mout/object/omit';
-import isEmpty from 'mout/lang/isEmpty';
-import upperCase from 'mout/string/upperCase';
-import underscore from 'mout/string/underscore';
-import toString from 'mout/lang/toString';
+let knex = require('knex');
+let JSData = require('js-data');
+let map = require('mout/array/map');
+let underscore = require('mout/string/underscore');
+let toString = require('mout/lang/toString');
 let { DSUtils } = JSData;
-let { Promise: P, contains, forOwn, deepMixIn, forEach, isObject, isString, removeCircular } = DSUtils;
+let { keys, isEmpty, upperCase, omit, contains, forOwn, deepMixIn, forEach, isObject, isString, removeCircular } = DSUtils;
 
 let reserved = [
   'orderBy',
@@ -145,7 +141,7 @@ class DSSqlAdapter {
       .where(resourceConfig.idAttribute, toString(id))
       .then(rows => {
         if (!rows.length) {
-          return P.reject(new Error('Not Found!'));
+          return DSUtils.Promise.reject(new Error('Not Found!'));
         } else {
           instance = rows[0];
           let tasks = [];
@@ -185,7 +181,7 @@ class DSSqlAdapter {
             }
           });
 
-          return P.all(tasks);
+          return DSUtils.Promise.all(tasks);
         }
       })
       .then(loadedRelations => {

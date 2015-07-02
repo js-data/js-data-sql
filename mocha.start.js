@@ -4,8 +4,9 @@
 var assert = require('chai').assert;
 var mocha = require('mocha');
 var sinon = require('sinon');
-var DSSqlAdapter = require('./');
 var JSData = require('js-data');
+JSData.DSUtils.Promise = require('bluebird');
+var DSSqlAdapter = require('./');
 
 var adapter, store, DSUtils, DSErrors, User, Post, Comment;
 

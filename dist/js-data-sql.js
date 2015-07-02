@@ -51,48 +51,18 @@ module.exports =
 
 	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
-
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
-	var _knex = __webpack_require__(1);
-
-	var _knex2 = _interopRequireDefault(_knex);
-
-	var _jsData = __webpack_require__(2);
-
-	var _jsData2 = _interopRequireDefault(_jsData);
-
-	var _moutArrayMap = __webpack_require__(3);
-
-	var _moutArrayMap2 = _interopRequireDefault(_moutArrayMap);
-
-	var _moutObjectKeys = __webpack_require__(4);
-
-	var _moutObjectKeys2 = _interopRequireDefault(_moutObjectKeys);
-
-	var _moutObjectOmit = __webpack_require__(5);
-
-	var _moutObjectOmit2 = _interopRequireDefault(_moutObjectOmit);
-
-	var _moutLangIsEmpty = __webpack_require__(6);
-
-	var _moutLangIsEmpty2 = _interopRequireDefault(_moutLangIsEmpty);
-
-	var _moutStringUpperCase = __webpack_require__(7);
-
-	var _moutStringUpperCase2 = _interopRequireDefault(_moutStringUpperCase);
-
-	var _moutStringUnderscore = __webpack_require__(8);
-
-	var _moutStringUnderscore2 = _interopRequireDefault(_moutStringUnderscore);
-
-	var _moutLangToString = __webpack_require__(9);
-
-	var _moutLangToString2 = _interopRequireDefault(_moutLangToString);
-
-	var DSUtils = _jsData2['default'].DSUtils;
-	var P = DSUtils.Promise;
+	var knex = __webpack_require__(1);
+	var JSData = __webpack_require__(2);
+	var map = __webpack_require__(3);
+	var underscore = __webpack_require__(4);
+	var toString = __webpack_require__(5);
+	var DSUtils = JSData.DSUtils;
+	var keys = DSUtils.keys;
+	var isEmpty = DSUtils.isEmpty;
+	var upperCase = DSUtils.upperCase;
+	var omit = DSUtils.omit;
 	var contains = DSUtils.contains;
 	var forOwn = DSUtils.forOwn;
 	var deepMixIn = DSUtils.deepMixIn;
@@ -104,13 +74,13 @@ module.exports =
 	var reserved = ['orderBy', 'sort', 'limit', 'offset', 'skip', 'where'];
 
 	function filterQuery(resourceConfig, params) {
-	  var query = this.query.select('*').from(resourceConfig.table || (0, _moutStringUnderscore2['default'])(resourceConfig.name));
+	  var query = this.query.select('*').from(resourceConfig.table || underscore(resourceConfig.name));
 	  params = params || {};
 	  params.where = params.where || {};
 	  params.orderBy = params.orderBy || params.sort;
 	  params.skip = params.skip || params.offset;
 
-	  forEach((0, _moutObjectKeys2['default'])(params), function (k) {
+	  forEach(keys(params), function (k) {
 	    var v = params[k];
 	    if (!contains(reserved, k)) {
 	      if (isObject(v)) {
@@ -124,7 +94,7 @@ module.exports =
 	    }
 	  });
 
-	  if (!(0, _moutLangIsEmpty2['default'])(params.where)) {
+	  if (!isEmpty(params.where)) {
 	    forOwn(params.where, function (criteria, field) {
 	      if (!isObject(criteria)) {
 	        params.where[field] = {
@@ -189,7 +159,7 @@ module.exports =
 	      if (isString(params.orderBy[i])) {
 	        params.orderBy[i] = [params.orderBy[i], 'asc'];
 	      }
-	      query = (0, _moutStringUpperCase2['default'])(params.orderBy[i][1]) === 'DESC' ? query.orderBy(params.orderBy[i][0], 'desc') : query.orderBy(params.orderBy[i][0], 'asc');
+	      query = upperCase(params.orderBy[i][1]) === 'DESC' ? query.orderBy(params.orderBy[i][0], 'desc') : query.orderBy(params.orderBy[i][0], 'asc');
 	    }
 	  }
 
@@ -213,7 +183,7 @@ module.exports =
 	    if (options.__knex__) {
 	      this.query = options;
 	    } else {
-	      this.query = (0, _knex2['default'])(options);
+	      this.query = knex(options);
 	    }
 	    deepMixIn(this.defaults, options);
 	  }
@@ -227,9 +197,9 @@ module.exports =
 	      var fields = [];
 	      options = options || {};
 	      options['with'] = options['with'] || [];
-	      return this.query.select('*').from(resourceConfig.table || (0, _moutStringUnderscore2['default'])(resourceConfig.name)).where(resourceConfig.idAttribute, (0, _moutLangToString2['default'])(id)).then(function (rows) {
+	      return this.query.select('*').from(resourceConfig.table || underscore(resourceConfig.name)).where(resourceConfig.idAttribute, toString(id)).then(function (rows) {
 	        if (!rows.length) {
-	          return P.reject(new Error('Not Found!'));
+	          return DSUtils.Promise.reject(new Error('Not Found!'));
 	        } else {
 	          var _ret = (function () {
 	            instance = rows[0];
@@ -271,7 +241,7 @@ module.exports =
 	            });
 
 	            return {
-	              v: P.all(tasks)
+	              v: DSUtils.Promise.all(tasks)
 	            };
 	          })();
 
@@ -294,8 +264,8 @@ module.exports =
 	    value: function create(resourceConfig, attrs) {
 	      var _this2 = this;
 
-	      attrs = removeCircular((0, _moutObjectOmit2['default'])(attrs, resourceConfig.relationFields || []));
-	      return this.query(resourceConfig.table || (0, _moutStringUnderscore2['default'])(resourceConfig.name)).insert(attrs, resourceConfig.idAttribute).then(function (ids) {
+	      attrs = removeCircular(omit(attrs, resourceConfig.relationFields || []));
+	      return this.query(resourceConfig.table || underscore(resourceConfig.name)).insert(attrs, resourceConfig.idAttribute).then(function (ids) {
 	        if (attrs[resourceConfig.idAttribute]) {
 	          return _this2.find(resourceConfig, attrs[resourceConfig.idAttribute]);
 	        } else if (ids.length) {
@@ -310,8 +280,8 @@ module.exports =
 	    value: function update(resourceConfig, id, attrs) {
 	      var _this3 = this;
 
-	      attrs = removeCircular((0, _moutObjectOmit2['default'])(attrs, resourceConfig.relationFields || []));
-	      return this.query(resourceConfig.table || (0, _moutStringUnderscore2['default'])(resourceConfig.name)).where(resourceConfig.idAttribute, (0, _moutLangToString2['default'])(id)).update(attrs).then(function () {
+	      attrs = removeCircular(omit(attrs, resourceConfig.relationFields || []));
+	      return this.query(resourceConfig.table || underscore(resourceConfig.name)).where(resourceConfig.idAttribute, toString(id)).update(attrs).then(function () {
 	        return _this3.find(resourceConfig, id);
 	      });
 	    }
@@ -320,9 +290,9 @@ module.exports =
 	    value: function updateAll(resourceConfig, attrs, params, options) {
 	      var _this4 = this;
 
-	      attrs = removeCircular((0, _moutObjectOmit2['default'])(attrs, resourceConfig.relationFields || []));
+	      attrs = removeCircular(omit(attrs, resourceConfig.relationFields || []));
 	      return filterQuery.call(this, resourceConfig, params, options).then(function (items) {
-	        return (0, _moutArrayMap2['default'])(items, function (item) {
+	        return map(items, function (item) {
 	          return item[resourceConfig.idAttribute];
 	        });
 	      }).then(function (ids) {
@@ -338,7 +308,7 @@ module.exports =
 	  }, {
 	    key: 'destroy',
 	    value: function destroy(resourceConfig, id) {
-	      return this.query(resourceConfig.table || (0, _moutStringUnderscore2['default'])(resourceConfig.name)).where(resourceConfig.idAttribute, (0, _moutLangToString2['default'])(id)).del().then(function () {
+	      return this.query(resourceConfig.table || underscore(resourceConfig.name)).where(resourceConfig.idAttribute, toString(id)).del().then(function () {
 	        return undefined;
 	      });
 	    }
@@ -379,34 +349,10 @@ module.exports =
 /* 4 */
 /***/ function(module, exports) {
 
-	module.exports = require("mout/object/keys");
-
-/***/ },
-/* 5 */
-/***/ function(module, exports) {
-
-	module.exports = require("mout/object/omit");
-
-/***/ },
-/* 6 */
-/***/ function(module, exports) {
-
-	module.exports = require("mout/lang/isEmpty");
-
-/***/ },
-/* 7 */
-/***/ function(module, exports) {
-
-	module.exports = require("mout/string/upperCase");
-
-/***/ },
-/* 8 */
-/***/ function(module, exports) {
-
 	module.exports = require("mout/string/underscore");
 
 /***/ },
-/* 9 */
+/* 5 */
 /***/ function(module, exports) {
 
 	module.exports = require("mout/lang/toString");

@@ -1,3 +1,4 @@
+var Promise = require('bluebird');
 describe('DSSqlAdapter#find', function () {
   it('should find a user in a Sql db', function () {
     var id, id2, _user, _post, _comments;
