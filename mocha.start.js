@@ -8,7 +8,7 @@ var JSData = require('js-data');
 JSData.DSUtils.Promise = require('bluebird');
 var DSSqlAdapter = require('./');
 
-var adapter, store, DSUtils, DSErrors, User, Post, Comment;
+var adapter, store, DSUtils, DSErrors, Profile, User, Post, Comment;
 
 var globals = module.exports = {
   fail: function (msg) {
@@ -55,12 +55,17 @@ beforeEach(function () {
   adapter = new DSSqlAdapter({
     client: 'mysql',
     connection: {
-      user: 'ubuntu',
-      database: 'circle_test'
+      //user: 'ubuntu',
+      //database: 'circle_test'
+      user: 'root',
+      database: 'test'
     }
   });
   DSUtils = JSData.DSUtils;
   DSErrors = JSData.DSErrors;
+  globals.Profile = global.Profile = Profile = store.defineResource({
+    name: 'profile'
+  });
   globals.User = global.User = User = store.defineResource({
     name: 'user',
     relations: {
@@ -68,6 +73,12 @@ beforeEach(function () {
         post: {
           localField: 'posts',
           foreignKey: 'post'
+        }
+      },
+      hasOne: {
+        profile: {
+          localField: 'profile',
+          localKey: 'profileId'
         }
       }
     }

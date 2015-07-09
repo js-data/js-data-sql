@@ -9,7 +9,7 @@ describe('DSSqlAdapter#destroyAll', function () {
         });
       }).then(function (users) {
         assert.equal(users.length, 1);
-        assert.deepEqual(users[0], { id: id, name: 'John', age: null });
+        assert.deepEqual(users[0], { id: id, name: 'John', age: null, profileId: null });
         return adapter.destroyAll(User, {
           name: 'John'
         });

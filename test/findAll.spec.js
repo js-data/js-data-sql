@@ -1,4 +1,5 @@
-describe('DSSqlAdapter#findAll', function () {
+var Promise = require('bluebird');
+describe.only('DSSqlAdapter#findAll', function () {
   it('should filter users', function () {
     var id;
 
@@ -6,7 +7,7 @@ describe('DSSqlAdapter#findAll', function () {
       age: 30
     }).then(function (users) {
       assert.equal(users.length, 0);
-      return adapter.create(User, { name: 'John' });
+      return adapter.create(User, {name: 'John'});
     }).then(function (user) {
       id = user.id;
       return adapter.findAll(User, {
@@ -14,7 +15,7 @@ describe('DSSqlAdapter#findAll', function () {
       });
     }).then(function (users) {
       assert.equal(users.length, 1);
-      assert.deepEqual(users[0], { id: id, name: 'John', age: null });
+      assert.deepEqual(users[0], {id: id, name: 'John', age: null, profileId: null});
       return adapter.destroy(User, id);
     }).then(function (destroyedUser) {
       assert.isFalse(!!destroyedUser);
@@ -31,7 +32,7 @@ describe('DSSqlAdapter#findAll', function () {
       }
     }).then(function (users) {
       assert.equal(users.length, 0);
-      return adapter.create(User, { name: 'John' });
+      return adapter.create(User, {name: 'John'});
     }).then(function (user) {
       id = user.id;
       return adapter.findAll(User, {
@@ -39,7 +40,7 @@ describe('DSSqlAdapter#findAll', function () {
       });
     }).then(function (users) {
       assert.equal(users.length, 1);
-      assert.deepEqual(users[0], { id: id, name: 'John', age: null });
+      assert.deepEqual(users[0], {id: id, name: 'John', age: null, profileId: null});
       return adapter.destroy(User, id);
     }).then(function (destroyedUser) {
       assert.isFalse(!!destroyedUser);
@@ -56,7 +57,7 @@ describe('DSSqlAdapter#findAll', function () {
       }
     }).then(function (users) {
       assert.equal(users.length, 0);
-      return adapter.create(User, { name: 'John' });
+      return adapter.create(User, {name: 'John'});
     }).then(function (user) {
       id = user.id;
       return adapter.findAll(User, {
@@ -68,7 +69,7 @@ describe('DSSqlAdapter#findAll', function () {
       });
     }).then(function (users) {
       assert.equal(users.length, 1);
-      assert.deepEqual(users[0], { id: id, name: 'John', age: null });
+      assert.deepEqual(users[0], {id: id, name: 'John', age: null, profileId: null});
       return adapter.destroy(User, id);
     }).then(function (destroyedUser) {
       assert.isFalse(!!destroyedUser);
@@ -78,14 +79,102 @@ describe('DSSqlAdapter#findAll', function () {
     var op = '>=<';
 
     assert.throw(function () {
-      return adapter.findAll(User, {
-        where: {
-          name: {
-            op: 'John'
+        return adapter.findAll(User, {
+          where: {
+            name: {
+              op: 'John'
+            }
           }
-        }
+        });
+      }
+      , Error, 'Operator not found');
+  });
+  it('should load belongsTo relations', function () {
+    return adapter.create(Profile, {
+      email: 'foo@test.com'
+    }).then(function (profile) {
+      return Promise.all([
+        adapter.create(User, {name: 'John', profileId: profile.id}).then(function (user) {
+          return adapter.create(Post, {content: 'foo', userId: user.id});
+        }),
+        adapter.create(User, {name: 'Sally'}).then(function (user) {
+          return adapter.create(Post, {content: 'bar', userId: user.id});
+        })
+      ])
+    })
+      .spread(function (post1, post2) {
+        return Promise.all([
+          adapter.create(Comment, {
+            content: 'test2',
+            postId: post1.id,
+            userId: post1.userId
+          }),
+          adapter.create(Comment, {
+            content: 'test3',
+            postId: post2.id,
+            userId: post2.userId
+          })
+        ]);
+      })
+      .then(function () {
+        return adapter.findAll(Comment, {}, {'with': ['user', 'user.profile', 'post', 'post.user']});
+      })
+      .then(function (comments) {
+        comments.sort(function (a) {
+          return a.user.profile;
+        });
+        assert.isDefined(comments[0].post);
+        assert.isDefined(comments[0].post.user);
+        assert.isDefined(comments[0].user);
+        assert.isDefined(comments[0].user.profile);
+        assert.isDefined(comments[1].post);
+        assert.isDefined(comments[1].post.user);
+        assert.isDefined(comments[1].user);
+        assert.isUndefined(comments[1].user.profile);
       });
-    }
-    , Error, 'Operator not found');
+  });
+  it('should load hasMany and belongsTo relations', function () {
+    return adapter.create(Profile, {
+      email: 'foo@test.com'
+    }).then(function (profile) {
+      return Promise.all([
+        adapter.create(User, {name: 'John', profileId: profile.id}).then(function (user) {
+          return adapter.create(Post, {content: 'foo', userId: user.id});
+        }),
+        adapter.create(User, {name: 'Sally'}).then(function (user) {
+          return adapter.create(Post, {content: 'bar', userId: user.id});
+        })
+      ]);
+    })
+      .spread(function (post1, post2) {
+        return Promise.all([
+          adapter.create(Comment, {
+            content: 'test2',
+            postId: post1.id,
+            userId: post1.userId
+          }),
+          adapter.create(Comment, {
+            content: 'test3',
+            postId: post2.id,
+            userId: post2.userId
+          })
+        ]);
+      })
+      .then(function () {
+        return adapter.findAll(Post, {}, {'with': ['user', 'comment', 'comment.user', 'comment.user.profile']});
+      })
+      .then(function (posts) {
+        posts.sort(function (a) {
+          return a.comments[0].user.profile;
+        });
+        assert.isDefined(posts[0].comments);
+        assert.isDefined(posts[0].comments[0].user);
+        assert.isDefined(posts[0].comments[0].user.profile);
+        assert.isDefined(posts[0].user);
+        assert.isDefined(posts[1].comments);
+        assert.isDefined(posts[1].comments[0].user);
+        assert.isUndefined(posts[1].comments[0].user.profile);
+        assert.isDefined(posts[1].user);
+      });
   });
 });

@@ -14,7 +14,7 @@ describe('DSSqlAdapter#updateAll', function () {
         users.sort(function (a, b) {
           return a.age - b.age;
         });
-        assert.deepEqual(users, [{ id: id, name: 'John', age: 20 }, { id: id2, name: 'John', age: 30 }]);
+        assert.deepEqual(users, [{ id: id, name: 'John', age: 20, profileId: null }, { id: id2, name: 'John', age: 30, profileId: null }]);
         return adapter.updateAll(User, {
           name: 'Johnny'
         }, {
@@ -24,7 +24,7 @@ describe('DSSqlAdapter#updateAll', function () {
         users.sort(function (a, b) {
           return a.age - b.age;
         });
-        assert.deepEqual(users, [{ id: id, name: 'Johnny', age: 20 }, { id: id2, name: 'Johnny', age: 30 }]);
+        assert.deepEqual(users, [{ id: id, name: 'Johnny', age: 20, profileId: null }, { id: id2, name: 'Johnny', age: 30, profileId: null }]);
         return adapter.findAll(User, {
           name: 'John'
         });
@@ -38,7 +38,7 @@ describe('DSSqlAdapter#updateAll', function () {
         users.sort(function (a, b) {
           return a.age - b.age;
         });
-        assert.deepEqual(users, [{ id: id, name: 'Johnny', age: 20 }, { id: id2, name: 'Johnny', age: 30 }]);
+        assert.deepEqual(users, [{ id: id, name: 'Johnny', age: 20, profileId: null }, { id: id2, name: 'Johnny', age: 30, profileId: null }]);
         return adapter.destroyAll(User);
       }).then(function (destroyedUser) {
         assert.isFalse(!!destroyedUser);

@@ -13,7 +13,7 @@ describe('DSSqlAdapter#find', function () {
       .then(function (user) {
         assert.equal(user.name, 'John');
         assert.isDefined(user.id);
-        assert.deepEqual(user, { id: id, name: 'John', age: null });
+        assert.deepEqual(user, { id: id, name: 'John', age: null, profileId: null });
         return adapter.create(Post, {
           content: 'test',
           userId: user.id
@@ -67,6 +67,7 @@ describe('DSSqlAdapter#find', function () {
         throw new Error('Should not have reached here!');
       })
       .catch(function (err) {
+        console.log(err.stack);
         assert.equal(err.message, 'Not Found!');
       });
   });

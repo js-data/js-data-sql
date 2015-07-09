@@ -1,3 +1,8 @@
+##### 0.8.0 - 09 July 2015
+
+###### Backwards compatible API changes
+- #5 - Support for loading relations in `findAll`
+
 ##### 0.7.0 - 02 July 2015
 
 Stable Version 0.7.0

@@ -11,19 +11,19 @@ describe('DSSqlAdapter#update', function () {
       .then(function (foundUser) {
         assert.equal(foundUser.name, 'John');
         assert.isDefined(foundUser.id);
-        assert.deepEqual(foundUser, { id: id, name: 'John', age: null });
+        assert.deepEqual(foundUser, { id: id, name: 'John', age: null, profileId: null });
         return adapter.update(User, foundUser.id, { name: 'Johnny' });
       })
       .then(function (updatedUser) {
         assert.equal(updatedUser.name, 'Johnny');
         assert.isDefined(updatedUser.id);
-        assert.deepEqual(updatedUser, { id: id, name: 'Johnny', age: null });
+        assert.deepEqual(updatedUser, { id: id, name: 'Johnny', age: null, profileId: null });
         return adapter.find(User, updatedUser.id);
       })
       .then(function (foundUser) {
         assert.equal(foundUser.name, 'Johnny');
         assert.isDefined(foundUser.id);
-        assert.deepEqual(foundUser, { id: id, name: 'Johnny', age: null });
+        assert.deepEqual(foundUser, { id: id, name: 'Johnny', age: null, profileId: null });
         return adapter.destroy(User, foundUser.id);
       })
       .then(function (user) {

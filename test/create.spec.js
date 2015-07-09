@@ -10,7 +10,7 @@ describe('DSSqlAdapter#create', function () {
       .then(function (user) {
         assert.equal(user.name, 'John');
         assert.isDefined(user.id);
-        assert.deepEqual(user, { id: id, name: 'John', age: null });
+        assert.deepEqual(user, { id: id, name: 'John', age: null, profileId: null });
         return adapter.destroy(User, user.id);
       })
       .then(function (user) {

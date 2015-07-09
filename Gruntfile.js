@@ -51,6 +51,7 @@ module.exports = function (grunt) {
           'mout/array/map',
           'mout/lang/toString',
           'mout/string/underscore',
+          'mout/array/unique',
           'js-data',
           'knex'
         ],
