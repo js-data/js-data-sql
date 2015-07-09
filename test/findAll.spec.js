@@ -120,17 +120,13 @@ describe.only('DSSqlAdapter#findAll', function () {
         return adapter.findAll(Comment, {}, {'with': ['user', 'user.profile', 'post', 'post.user']});
       })
       .then(function (comments) {
-        comments.sort(function (a) {
-          return !a.user.profile;
-        });
         assert.isDefined(comments[0].post);
         assert.isDefined(comments[0].post.user);
         assert.isDefined(comments[0].user);
-        assert.isDefined(comments[0].user.profile);
+        assert.isDefined(comments[0].user.profile || comments[1].user.profile);
         assert.isDefined(comments[1].post);
         assert.isDefined(comments[1].post.user);
         assert.isDefined(comments[1].user);
-        assert.isUndefined(comments[1].user.profile);
       });
   });
   it('should load hasMany and belongsTo relations', function () {
@@ -164,16 +160,12 @@ describe.only('DSSqlAdapter#findAll', function () {
         return adapter.findAll(Post, {}, {'with': ['user', 'comment', 'comment.user', 'comment.user.profile']});
       })
       .then(function (posts) {
-        posts.sort(function (a) {
-          return !a.comments[0].user.profile;
-        });
         assert.isDefined(posts[0].comments);
         assert.isDefined(posts[0].comments[0].user);
-        assert.isDefined(posts[0].comments[0].user.profile);
+        assert.isDefined(posts[0].comments[0].user.profile || posts[1].comments[0].user.profile);
         assert.isDefined(posts[0].user);
         assert.isDefined(posts[1].comments);
         assert.isDefined(posts[1].comments[0].user);
-        assert.isUndefined(posts[1].comments[0].user.profile);
         assert.isDefined(posts[1].user);
       });
   });
