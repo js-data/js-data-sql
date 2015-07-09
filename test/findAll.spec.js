@@ -121,7 +121,7 @@ describe.only('DSSqlAdapter#findAll', function () {
       })
       .then(function (comments) {
         comments.sort(function (a) {
-          return a.user.profile;
+          return !a.user.profile;
         });
         assert.isDefined(comments[0].post);
         assert.isDefined(comments[0].post.user);
@@ -165,7 +165,7 @@ describe.only('DSSqlAdapter#findAll', function () {
       })
       .then(function (posts) {
         posts.sort(function (a) {
-          return a.comments[0].user.profile;
+          return !a.comments[0].user.profile;
         });
         assert.isDefined(posts[0].comments);
         assert.isDefined(posts[0].comments[0].user);

@@ -55,10 +55,10 @@ beforeEach(function () {
   adapter = new DSSqlAdapter({
     client: 'mysql',
     connection: {
-      user: 'ubuntu',
-      database: 'circle_test'
-      //user: 'root',
-      //database: 'test'
+      //user: 'ubuntu',
+      //database: 'circle_test'
+      user: 'root',
+      database: 'test'
     }
   });
   DSUtils = JSData.DSUtils;
@@ -134,6 +134,8 @@ afterEach(function (done) {
     return adapter.destroyAll(Post);
   }).then(function () {
     return adapter.destroyAll(User);
+  }).then(function () {
+    return adapter.destroyAll(Profile);
   }).then(function () {
     done();
   }, done);
