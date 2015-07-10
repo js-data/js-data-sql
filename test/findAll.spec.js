@@ -15,7 +15,7 @@ describe.only('DSSqlAdapter#findAll', function () {
       });
     }).then(function (users) {
       assert.equal(users.length, 1);
-      assert.deepEqual(users[0], {id: id, name: 'John', age: null, profileId: null});
+      assert.equalObjects(users[0], {id: id, name: 'John', age: null, profileId: null});
       return adapter.destroy(User, id);
     }).then(function (destroyedUser) {
       assert.isFalse(!!destroyedUser);
@@ -40,7 +40,7 @@ describe.only('DSSqlAdapter#findAll', function () {
       });
     }).then(function (users) {
       assert.equal(users.length, 1);
-      assert.deepEqual(users[0], {id: id, name: 'John', age: null, profileId: null});
+      assert.equalObjects(users[0], {id: id, name: 'John', age: null, profileId: null});
       return adapter.destroy(User, id);
     }).then(function (destroyedUser) {
       assert.isFalse(!!destroyedUser);

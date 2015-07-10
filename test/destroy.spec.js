@@ -1,7 +1,7 @@
 describe('DSSqlAdapter#destroy', function () {
   it('should destroy a user from a Sql db', function () {
     var id;
-    return adapter.create(User, { name: 'John' })
+    return adapter.create(User, {name: 'John'})
       .then(function (user) {
         id = user.id;
         return adapter.destroy(User, user.id);
