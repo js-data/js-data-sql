@@ -62,18 +62,6 @@ module.exports =
 	var unique = __webpack_require__(5);
 	var toString = __webpack_require__(6);
 	var DSUtils = JSData.DSUtils;
-	var keys = DSUtils.keys;
-	var isEmpty = DSUtils.isEmpty;
-	var upperCase = DSUtils.upperCase;
-	var omit = DSUtils.omit;
-	var contains = DSUtils.contains;
-	var forOwn = DSUtils.forOwn;
-	var deepMixIn = DSUtils.deepMixIn;
-	var filter = DSUtils.filter;
-	var forEach = DSUtils.forEach;
-	var isObject = DSUtils.isObject;
-	var isString = DSUtils.isString;
-	var removeCircular = DSUtils.removeCircular;
 
 	var reserved = ['orderBy', 'sort', 'limit', 'offset', 'skip', 'where'];
 
@@ -84,10 +72,10 @@ module.exports =
 	  params.orderBy = params.orderBy || params.sort;
 	  params.skip = params.skip || params.offset;
 
-	  forEach(keys(params), function (k) {
+	  DSUtils.forEach(DSUtils.keys(params), function (k) {
 	    var v = params[k];
-	    if (!contains(reserved, k)) {
-	      if (isObject(v)) {
+	    if (!DSUtils.contains(reserved, k)) {
+	      if (DSUtils.isObject(v)) {
 	        params.where[k] = v;
 	      } else {
 	        params.where[k] = {
@@ -98,14 +86,14 @@ module.exports =
 	    }
 	  });
 
-	  if (!isEmpty(params.where)) {
-	    forOwn(params.where, function (criteria, field) {
-	      if (!isObject(criteria)) {
+	  if (!DSUtils.isEmpty(params.where)) {
+	    DSUtils.forOwn(params.where, function (criteria, field) {
+	      if (!DSUtils.isObject(criteria)) {
 	        params.where[field] = {
 	          '==': criteria
 	        };
 	      }
-	      forOwn(criteria, function (v, op) {
+	      DSUtils.forOwn(criteria, function (v, op) {
 	        if (op === '==' || op === '===') {
 	          query = query.where(field, v);
 	        } else if (op === '!=' || op === '!==') {
@@ -156,14 +144,14 @@ module.exports =
 	  }
 
 	  if (params.orderBy) {
-	    if (isString(params.orderBy)) {
+	    if (DSUtils.isString(params.orderBy)) {
 	      params.orderBy = [[params.orderBy, 'asc']];
 	    }
 	    for (var i = 0; i < params.orderBy.length; i++) {
-	      if (isString(params.orderBy[i])) {
+	      if (DSUtils.isString(params.orderBy[i])) {
 	        params.orderBy[i] = [params.orderBy[i], 'asc'];
 	      }
-	      query = upperCase(params.orderBy[i][1]) === 'DESC' ? query.orderBy(params.orderBy[i][0], 'desc') : query.orderBy(params.orderBy[i][0], 'asc');
+	      query = DSUtils.upperCase(params.orderBy[i][1]) === 'DESC' ? query.orderBy(params.orderBy[i][0], 'desc') : query.orderBy(params.orderBy[i][0], 'asc');
 	    }
 	  }
 
@@ -189,7 +177,7 @@ module.exports =
 	    } else {
 	      this.query = knex(options);
 	    }
-	    deepMixIn(this.defaults, options);
+	    DSUtils.deepMixIn(this.defaults, options);
 	  }
 
 	  _createClass(DSSqlAdapter, [{
@@ -198,7 +186,6 @@ module.exports =
 	      var _this = this;
 
 	      var instance = undefined;
-	      var fields = [];
 	      options = options || {};
 	      options['with'] = options['with'] || [];
 	      return this.query.select('*').from(resourceConfig.table || underscore(resourceConfig.name)).where(resourceConfig.idAttribute, toString(id)).then(function (rows) {
@@ -209,39 +196,67 @@ module.exports =
 	            instance = rows[0];
 	            var tasks = [];
 
-	            forEach(resourceConfig.relationList, function (def) {
+	            DSUtils.forEach(resourceConfig.relationList, function (def) {
 	              var relationName = def.relation;
-	              if (contains(options['with'], relationName) || contains(options['with'], def.localField)) {
-	                DSUtils.remove(options['with'], relationName);
-	                var task = undefined;
-	                var params = {};
-	                if (resourceConfig.allowSimpleWhere) {
-	                  params[def.foreignKey] = instance[resourceConfig.idAttribute];
-	                } else {
-	                  params.where = {};
-	                  params.where[def.foreignKey] = {
-	                    '==': instance[resourceConfig.idAttribute]
-	                  };
-	                }
+	              var relationDef = resourceConfig.getResource(relationName);
+	              var containedName = null;
+	              if (DSUtils.contains(options['with'], relationName)) {
+	                containedName = relationName;
+	              } else if (DSUtils.contains(options['with'], def.localField)) {
+	                containedName = def.localField;
+	              }
+	              if (containedName) {
+	                (function () {
+	                  var __options = DSUtils.deepMixIn({}, options.orig ? options.orig() : options);
+	                  __options = DSUtils._(relationDef, __options);
+	                  DSUtils.remove(__options['with'], containedName);
+	                  DSUtils.forEach(__options['with'], function (relation, i) {
+	                    if (relation && relation.indexOf(containedName) === 0 && relation.length >= containedName.length && relation[containedName.length] === '.') {
+	                      __options['with'][i] = relation.substr(containedName.length + 1);
+	                    }
+	                  });
 
-	                if (def.type === 'hasMany' && params[def.foreignKey]) {
-	                  task = _this.findAll(resourceConfig.getResource(relationName), params, options);
-	                } else if (def.type === 'hasOne') {
-	                  if (def.localKey && DSUtils.get(instance, def.localKey)) {
-	                    task = _this.find(resourceConfig.getResource(relationName), DSUtils.get(instance, def.localKey), options);
-	                  } else if (def.foreignKey && params[def.foreignKey]) {
-	                    task = _this.findAll(resourceConfig.getResource(relationName), params, options).then(function (hasOnes) {
-	                      return hasOnes.length ? hasOnes[0] : null;
+	                  var task = undefined;
+
+	                  if ((def.type === 'hasOne' || def.type === 'hasMany') && def.foreignKey) {
+	                    task = _this.findAll(resourceConfig.getResource(relationName), {
+	                      where: _defineProperty({}, def.foreignKey, {
+	                        '==': instance[resourceConfig.idAttribute]
+	                      })
+	                    }, __options).then(function (relatedItems) {
+	                      if (def.type === 'hasOne' && relatedItems.length) {
+	                        DSUtils.set(instance, def.localField, relatedItems[0]);
+	                      } else {
+	                        DSUtils.set(instance, def.localField, relatedItems);
+	                      }
+	                      return relatedItems;
+	                    });
+	                  } else if (def.type === 'hasMany' && def.localKeys) {
+	                    var localKeys = [];
+	                    var itemKeys = instance[def.localKeys] || [];
+	                    itemKeys = Array.isArray(itemKeys) ? itemKeys : DSUtils.keys(itemKeys);
+	                    localKeys = localKeys.concat(itemKeys || []);
+	                    task = _this.findAll(resourceConfig.getResource(relationName), {
+	                      where: _defineProperty({}, relationDef.idAttribute, {
+	                        'in': DSUtils.filter(unique(localKeys), function (x) {
+	                          return x;
+	                        })
+	                      })
+	                    }, __options).then(function (relatedItems) {
+	                      DSUtils.set(instance, def.localField, relatedItems);
+	                      return relatedItems;
+	                    });
+	                  } else if (def.type === 'belongsTo' || def.type === 'hasOne' && def.localKey) {
+	                    task = _this.find(resourceConfig.getResource(relationName), DSUtils.get(instance, def.localKey), __options).then(function (relatedItem) {
+	                      DSUtils.set(instance, def.localField, relatedItem);
+	                      return relatedItem;
 	                    });
 	                  }
-	                } else if (DSUtils.get(instance, def.localKey)) {
-	                  task = _this.find(resourceConfig.getResource(relationName), DSUtils.get(instance, def.localKey), options);
-	                }
 
-	                if (task) {
-	                  tasks.push(task);
-	                  fields.push(def.localField);
-	                }
+	                  if (task) {
+	                    tasks.push(task);
+	                  }
+	                })();
 	              }
 	            });
 
@@ -252,10 +267,7 @@ module.exports =
 
 	          if (typeof _ret === 'object') return _ret.v;
 	        }
-	      }).then(function (loadedRelations) {
-	        forEach(fields, function (field, index) {
-	          return DSUtils.set(instance, field, loadedRelations[index]);
-	        });
+	      }).then(function () {
 	        return instance;
 	      });
 	    }
@@ -270,13 +282,13 @@ module.exports =
 	      return filterQuery.call(this, resourceConfig, params, options).then(function (_items) {
 	        items = _items;
 	        var tasks = [];
-	        forEach(resourceConfig.relationList, function (def) {
+	        DSUtils.forEach(resourceConfig.relationList, function (def) {
 	          var relationName = def.relation;
 	          var relationDef = resourceConfig.getResource(relationName);
 	          var containedName = null;
-	          if (contains(options['with'], relationName)) {
+	          if (DSUtils.contains(options['with'], relationName)) {
 	            containedName = relationName;
-	          } else if (contains(options['with'], def.localField)) {
+	          } else if (DSUtils.contains(options['with'], def.localField)) {
 	            containedName = def.localField;
 	          }
 	          if (containedName) {
@@ -284,7 +296,7 @@ module.exports =
 	              var __options = DSUtils.deepMixIn({}, options.orig ? options.orig() : options);
 	              __options = DSUtils._(relationDef, __options);
 	              DSUtils.remove(__options['with'], containedName);
-	              forEach(__options['with'], function (relation, i) {
+	              DSUtils.forEach(__options['with'], function (relation, i) {
 	                if (relation && relation.indexOf(containedName) === 0 && relation.length >= containedName.length && relation[containedName.length] === '.') {
 	                  __options['with'][i] = relation.substr(containedName.length + 1);
 	                }
@@ -295,16 +307,16 @@ module.exports =
 	              if ((def.type === 'hasOne' || def.type === 'hasMany') && def.foreignKey) {
 	                task = _this2.findAll(resourceConfig.getResource(relationName), {
 	                  where: _defineProperty({}, def.foreignKey, {
-	                    'in': filter(map(items, function (item) {
+	                    'in': DSUtils.filter(map(items, function (item) {
 	                      return DSUtils.get(item, resourceConfig.idAttribute);
 	                    }), function (x) {
 	                      return x;
 	                    })
 	                  })
 	                }, __options).then(function (relatedItems) {
-	                  forEach(items, function (item) {
+	                  DSUtils.forEach(items, function (item) {
 	                    var attached = [];
-	                    forEach(relatedItems, function (relatedItem) {
+	                    DSUtils.forEach(relatedItems, function (relatedItem) {
 	                      if (DSUtils.get(relatedItem, def.foreignKey) === item[resourceConfig.idAttribute]) {
 	                        attached.push(relatedItem);
 	                      }
@@ -320,24 +332,24 @@ module.exports =
 	              } else if (def.type === 'hasMany' && def.localKeys) {
 	                (function () {
 	                  var localKeys = [];
-	                  forEach(items, function (item) {
+	                  DSUtils.forEach(items, function (item) {
 	                    var itemKeys = item[def.localKeys] || [];
-	                    itemKeys = Array.isArray(itemKeys) ? itemKeys : keys(itemKeys);
+	                    itemKeys = Array.isArray(itemKeys) ? itemKeys : DSUtils.keys(itemKeys);
 	                    localKeys = localKeys.concat(itemKeys || []);
 	                  });
 	                  task = _this2.findAll(resourceConfig.getResource(relationName), {
 	                    where: _defineProperty({}, relationDef.idAttribute, {
-	                      'in': filter(unique(localKeys), function (x) {
+	                      'in': DSUtils.filter(unique(localKeys), function (x) {
 	                        return x;
 	                      })
 	                    })
 	                  }, __options).then(function (relatedItems) {
-	                    forEach(items, function (item) {
+	                    DSUtils.forEach(items, function (item) {
 	                      var attached = [];
 	                      var itemKeys = item[def.localKeys] || [];
-	                      itemKeys = Array.isArray(itemKeys) ? itemKeys : keys(itemKeys);
-	                      forEach(relatedItems, function (relatedItem) {
-	                        if (itemKeys && contains(itemKeys, relatedItem[relationDef.idAttribute])) {
+	                      itemKeys = Array.isArray(itemKeys) ? itemKeys : DSUtils.keys(itemKeys);
+	                      DSUtils.forEach(relatedItems, function (relatedItem) {
+	                        if (itemKeys && DSUtils.contains(itemKeys, relatedItem[relationDef.idAttribute])) {
 	                          attached.push(relatedItem);
 	                        }
 	                      });
@@ -349,15 +361,15 @@ module.exports =
 	              } else if (def.type === 'belongsTo' || def.type === 'hasOne' && def.localKey) {
 	                task = _this2.findAll(resourceConfig.getResource(relationName), {
 	                  where: _defineProperty({}, relationDef.idAttribute, {
-	                    'in': filter(map(items, function (item) {
+	                    'in': DSUtils.filter(map(items, function (item) {
 	                      return DSUtils.get(item, def.localKey);
 	                    }), function (x) {
 	                      return x;
 	                    })
 	                  })
 	                }, __options).then(function (relatedItems) {
-	                  forEach(items, function (item) {
-	                    forEach(relatedItems, function (relatedItem) {
+	                  DSUtils.forEach(items, function (item) {
+	                    DSUtils.forEach(relatedItems, function (relatedItem) {
 	                      if (relatedItem[relationDef.idAttribute] === item[def.localKey]) {
 	                        DSUtils.set(item, def.localField, relatedItem);
 	                      }
@@ -383,7 +395,7 @@ module.exports =
 	    value: function create(resourceConfig, attrs) {
 	      var _this3 = this;
 
-	      attrs = removeCircular(omit(attrs, resourceConfig.relationFields || []));
+	      attrs = DSUtils.removeCircular(DSUtils.omit(attrs, resourceConfig.relationFields || []));
 	      return this.query(resourceConfig.table || underscore(resourceConfig.name)).insert(attrs, resourceConfig.idAttribute).then(function (ids) {
 	        if (attrs[resourceConfig.idAttribute]) {
 	          return _this3.find(resourceConfig, attrs[resourceConfig.idAttribute]);
@@ -399,7 +411,7 @@ module.exports =
 	    value: function update(resourceConfig, id, attrs) {
 	      var _this4 = this;
 
-	      attrs = removeCircular(omit(attrs, resourceConfig.relationFields || []));
+	      attrs = DSUtils.removeCircular(DSUtils.omit(attrs, resourceConfig.relationFields || []));
 	      return this.query(resourceConfig.table || underscore(resourceConfig.name)).where(resourceConfig.idAttribute, toString(id)).update(attrs).then(function () {
 	        return _this4.find(resourceConfig, id);
 	      });
@@ -409,7 +421,7 @@ module.exports =
 	    value: function updateAll(resourceConfig, attrs, params, options) {
 	      var _this5 = this;
 
-	      attrs = removeCircular(omit(attrs, resourceConfig.relationFields || []));
+	      attrs = DSUtils.removeCircular(DSUtils.omit(attrs, resourceConfig.relationFields || []));
 	      return filterQuery.call(this, resourceConfig, params, options).then(function (items) {
 	        return map(items, function (item) {
 	          return item[resourceConfig.idAttribute];

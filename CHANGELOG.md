@@ -1,3 +1,8 @@
+##### 0.9.0 - 10 July 2015
+
+###### Backwards compatible API changes
+- Support for loading deeply nested relations in `find`
+
 ##### 0.8.0 - 09 July 2015
 
 ###### Backwards compatible API changes

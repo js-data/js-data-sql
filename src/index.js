@@ -5,7 +5,6 @@ let underscore = require('mout/string/underscore');
 let unique = require('mout/array/unique');
 let toString = require('mout/lang/toString');
 let { DSUtils } = JSData;
-let { keys, isEmpty, upperCase, omit, contains, forOwn, deepMixIn, filter, forEach, isObject, isString, removeCircular } = DSUtils;
 
 let reserved = [
   'orderBy',
@@ -23,10 +22,10 @@ function filterQuery(resourceConfig, params) {
   params.orderBy = params.orderBy || params.sort;
   params.skip = params.skip || params.offset;
 
-  forEach(keys(params), k => {
+  DSUtils.forEach(DSUtils.keys(params), k => {
     let v = params[k];
-    if (!contains(reserved, k)) {
-      if (isObject(v)) {
+    if (!DSUtils.contains(reserved, k)) {
+      if (DSUtils.isObject(v)) {
         params.where[k] = v;
       } else {
         params.where[k] = {
@@ -37,14 +36,14 @@ function filterQuery(resourceConfig, params) {
     }
   });
 
-  if (!isEmpty(params.where)) {
-    forOwn(params.where, (criteria, field) => {
-      if (!isObject(criteria)) {
+  if (!DSUtils.isEmpty(params.where)) {
+    DSUtils.forOwn(params.where, (criteria, field) => {
+      if (!DSUtils.isObject(criteria)) {
         params.where[field] = {
           '==': criteria
         };
       }
-      forOwn(criteria, (v, op) => {
+      DSUtils.forOwn(criteria, (v, op) => {
         if (op === '==' || op === '===') {
           query = query.where(field, v);
         } else if (op === '!=' || op === '!==') {
@@ -95,16 +94,16 @@ function filterQuery(resourceConfig, params) {
   }
 
   if (params.orderBy) {
-    if (isString(params.orderBy)) {
+    if (DSUtils.isString(params.orderBy)) {
       params.orderBy = [
         [params.orderBy, 'asc']
       ];
     }
     for (var i = 0; i < params.orderBy.length; i++) {
-      if (isString(params.orderBy[i])) {
+      if (DSUtils.isString(params.orderBy[i])) {
         params.orderBy[i] = [params.orderBy[i], 'asc'];
       }
-      query = upperCase(params.orderBy[i][1]) === 'DESC' ? query.orderBy(params.orderBy[i][0], 'desc') : query.orderBy(params.orderBy[i][0], 'asc');
+      query = DSUtils.upperCase(params.orderBy[i][1]) === 'DESC' ? query.orderBy(params.orderBy[i][0], 'desc') : query.orderBy(params.orderBy[i][0], 'asc');
     }
   }
 
@@ -128,12 +127,11 @@ class DSSqlAdapter {
     } else {
       this.query = knex(options);
     }
-    deepMixIn(this.defaults, options);
+    DSUtils.deepMixIn(this.defaults, options);
   }
 
   find(resourceConfig, id, options) {
     let instance;
-    let fields = [];
     options = options || {};
     options.with = options.with || [];
     return this.query
@@ -147,38 +145,66 @@ class DSSqlAdapter {
           instance = rows[0];
           let tasks = [];
 
-          forEach(resourceConfig.relationList, def => {
+          DSUtils.forEach(resourceConfig.relationList, def => {
             let relationName = def.relation;
-            if (contains(options.with, relationName) || contains(options.with, def.localField)) {
-              DSUtils.remove(options.with, relationName);
-              let task;
-              let params = {};
-              if (resourceConfig.allowSimpleWhere) {
-                params[def.foreignKey] = instance[resourceConfig.idAttribute];
-              } else {
-                params.where = {};
-                params.where[def.foreignKey] = {
-                  '==': instance[resourceConfig.idAttribute]
-                };
-              }
-
-              if (def.type === 'hasMany' && params[def.foreignKey]) {
-                task = this.findAll(resourceConfig.getResource(relationName), params, options);
-              } else if (def.type === 'hasOne') {
-                if (def.localKey && DSUtils.get(instance, def.localKey)) {
-                  task = this.find(resourceConfig.getResource(relationName), DSUtils.get(instance, def.localKey), options);
-                } else if (def.foreignKey && params[def.foreignKey]) {
-                  task = this.findAll(resourceConfig.getResource(relationName), params, options).then(hasOnes => {
-                    return hasOnes.length ? hasOnes[0] : null;
-                  });
+            let relationDef = resourceConfig.getResource(relationName);
+            let containedName = null;
+            if (DSUtils.contains(options.with, relationName)) {
+              containedName = relationName;
+            } else if (DSUtils.contains(options.with, def.localField)) {
+              containedName = def.localField;
+            }
+            if (containedName) {
+              let __options = DSUtils.deepMixIn({}, options.orig ? options.orig() : options);
+              __options = DSUtils._(relationDef, __options);
+              DSUtils.remove(__options.with, containedName);
+              DSUtils.forEach(__options.with, (relation, i) => {
+                if (relation && relation.indexOf(containedName) === 0 && relation.length >= containedName.length && relation[containedName.length] === '.') {
+                  __options.with[i] = relation.substr(containedName.length + 1);
                 }
-              } else if (DSUtils.get(instance, def.localKey)) {
-                task = this.find(resourceConfig.getResource(relationName), DSUtils.get(instance, def.localKey), options);
+              });
+
+              let task;
+
+              if ((def.type === 'hasOne' || def.type === 'hasMany') && def.foreignKey) {
+                task = this.findAll(resourceConfig.getResource(relationName), {
+                  where: {
+                    [def.foreignKey]: {
+                      '==': instance[resourceConfig.idAttribute]
+                    }
+                  }
+                }, __options).then(relatedItems => {
+                  if (def.type === 'hasOne' && relatedItems.length) {
+                    DSUtils.set(instance, def.localField, relatedItems[0]);
+                  } else {
+                    DSUtils.set(instance, def.localField, relatedItems);
+                  }
+                  return relatedItems;
+                });
+              } else if (def.type === 'hasMany' && def.localKeys) {
+                let localKeys = [];
+                let itemKeys = instance[def.localKeys] || [];
+                itemKeys = Array.isArray(itemKeys) ? itemKeys : DSUtils.keys(itemKeys);
+                localKeys = localKeys.concat(itemKeys || []);
+                task = this.findAll(resourceConfig.getResource(relationName), {
+                  where: {
+                    [relationDef.idAttribute]: {
+                      'in': DSUtils.filter(unique(localKeys), x => x)
+                    }
+                  }
+                }, __options).then(relatedItems => {
+                  DSUtils.set(instance, def.localField, relatedItems);
+                  return relatedItems;
+                });
+              } else if (def.type === 'belongsTo' || (def.type === 'hasOne' && def.localKey)) {
+                task = this.find(resourceConfig.getResource(relationName), DSUtils.get(instance, def.localKey), __options).then(relatedItem => {
+                  DSUtils.set(instance, def.localField, relatedItem);
+                  return relatedItem;
+                });
               }
 
               if (task) {
                 tasks.push(task);
-                fields.push(def.localField);
               }
             }
           });
@@ -186,10 +212,7 @@ class DSSqlAdapter {
           return DSUtils.Promise.all(tasks);
         }
       })
-      .then(loadedRelations => {
-        forEach(fields, (field, index) => DSUtils.set(instance, field, loadedRelations[index]));
-        return instance;
-      });
+      .then(() => instance);
   }
 
   findAll(resourceConfig, params, options) {
@@ -199,20 +222,20 @@ class DSSqlAdapter {
     return filterQuery.call(this, resourceConfig, params, options).then(_items => {
       items = _items;
       let tasks = [];
-      forEach(resourceConfig.relationList, def => {
+      DSUtils.forEach(resourceConfig.relationList, def => {
         let relationName = def.relation;
         let relationDef = resourceConfig.getResource(relationName);
         let containedName = null;
-        if (contains(options.with, relationName)) {
+        if (DSUtils.contains(options.with, relationName)) {
           containedName = relationName;
-        } else if (contains(options.with, def.localField)) {
+        } else if (DSUtils.contains(options.with, def.localField)) {
           containedName = def.localField;
         }
         if (containedName) {
           let __options = DSUtils.deepMixIn({}, options.orig ? options.orig() : options);
           __options = DSUtils._(relationDef, __options);
           DSUtils.remove(__options.with, containedName);
-          forEach(__options.with, (relation, i) => {
+          DSUtils.forEach(__options.with, (relation, i) => {
             if (relation && relation.indexOf(containedName) === 0 && relation.length >= containedName.length && relation[containedName.length] === '.') {
               __options.with[i] = relation.substr(containedName.length + 1);
             }
@@ -224,13 +247,13 @@ class DSSqlAdapter {
             task = this.findAll(resourceConfig.getResource(relationName), {
               where: {
                 [def.foreignKey]: {
-                  'in': filter(map(items, item => DSUtils.get(item, resourceConfig.idAttribute)), x => x)
+                  'in': DSUtils.filter(map(items, item => DSUtils.get(item, resourceConfig.idAttribute)), x => x)
                 }
               }
             }, __options).then(relatedItems => {
-              forEach(items, item => {
+              DSUtils.forEach(items, item => {
                 let attached = [];
-                forEach(relatedItems, relatedItem => {
+                DSUtils.forEach(relatedItems, relatedItem => {
                   if (DSUtils.get(relatedItem, def.foreignKey) === item[resourceConfig.idAttribute]) {
                     attached.push(relatedItem);
                   }
@@ -245,24 +268,24 @@ class DSSqlAdapter {
             });
           } else if (def.type === 'hasMany' && def.localKeys) {
             let localKeys = [];
-            forEach(items, item => {
+            DSUtils.forEach(items, item => {
               let itemKeys = item[def.localKeys] || [];
-              itemKeys = Array.isArray(itemKeys) ? itemKeys : keys(itemKeys);
+              itemKeys = Array.isArray(itemKeys) ? itemKeys : DSUtils.keys(itemKeys);
               localKeys = localKeys.concat(itemKeys || []);
             });
             task = this.findAll(resourceConfig.getResource(relationName), {
               where: {
                 [relationDef.idAttribute]: {
-                  'in': filter(unique(localKeys), x => x)
+                  'in': DSUtils.filter(unique(localKeys), x => x)
                 }
               }
             }, __options).then(relatedItems => {
-              forEach(items, item => {
+              DSUtils.forEach(items, item => {
                 let attached = [];
                 let itemKeys = item[def.localKeys] || [];
-                itemKeys = Array.isArray(itemKeys) ? itemKeys : keys(itemKeys);
-                forEach(relatedItems, relatedItem => {
-                  if (itemKeys && contains(itemKeys, relatedItem[relationDef.idAttribute])) {
+                itemKeys = Array.isArray(itemKeys) ? itemKeys : DSUtils.keys(itemKeys);
+                DSUtils.forEach(relatedItems, relatedItem => {
+                  if (itemKeys && DSUtils.contains(itemKeys, relatedItem[relationDef.idAttribute])) {
                     attached.push(relatedItem);
                   }
                 });
@@ -274,12 +297,12 @@ class DSSqlAdapter {
             task = this.findAll(resourceConfig.getResource(relationName), {
               where: {
                 [relationDef.idAttribute]: {
-                  'in': filter(map(items, item => DSUtils.get(item, def.localKey)), x => x)
+                  'in': DSUtils.filter(map(items, item => DSUtils.get(item, def.localKey)), x => x)
                 }
               }
             }, __options).then(relatedItems => {
-              forEach(items, item => {
-                forEach(relatedItems, relatedItem => {
+              DSUtils.forEach(items, item => {
+                DSUtils.forEach(relatedItems, relatedItem => {
                   if (relatedItem[relationDef.idAttribute] === item[def.localKey]) {
                     DSUtils.set(item, def.localField, relatedItem);
                   }
@@ -299,7 +322,7 @@ class DSSqlAdapter {
   }
 
   create(resourceConfig, attrs) {
-    attrs = removeCircular(omit(attrs, resourceConfig.relationFields || []));
+    attrs = DSUtils.removeCircular(DSUtils.omit(attrs, resourceConfig.relationFields || []));
     return this.query(resourceConfig.table || underscore(resourceConfig.name))
       .insert(attrs, resourceConfig.idAttribute)
       .then(ids => {
@@ -314,7 +337,7 @@ class DSSqlAdapter {
   }
 
   update(resourceConfig, id, attrs) {
-    attrs = removeCircular(omit(attrs, resourceConfig.relationFields || []));
+    attrs = DSUtils.removeCircular(DSUtils.omit(attrs, resourceConfig.relationFields || []));
     return this.query(resourceConfig.table || underscore(resourceConfig.name))
       .where(resourceConfig.idAttribute, toString(id))
       .update(attrs)
@@ -322,7 +345,7 @@ class DSSqlAdapter {
   }
 
   updateAll(resourceConfig, attrs, params, options) {
-    attrs = removeCircular(omit(attrs, resourceConfig.relationFields || []));
+    attrs = DSUtils.removeCircular(DSUtils.omit(attrs, resourceConfig.relationFields || []));
     return filterQuery.call(this, resourceConfig, params, options).then(items => {
       return map(items, item => item[resourceConfig.idAttribute]);
     }).then(ids => {
