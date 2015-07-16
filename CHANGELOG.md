@@ -1,3 +1,8 @@
+##### 0.9.2 - 16 July 2015
+
+###### Backwards compatible bug fixes
+- create and update weren't accepting options
+
 ##### 0.9.1 - 10 July 2015
 
 ###### Backwards compatible bug fixes

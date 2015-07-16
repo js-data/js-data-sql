@@ -327,27 +327,27 @@ class DSSqlAdapter {
     }).then(() => items);
   }
 
-  create(resourceConfig, attrs) {
+  create(resourceConfig, attrs, options) {
     attrs = DSUtils.removeCircular(DSUtils.omit(attrs, resourceConfig.relationFields || []));
     return this.query(resourceConfig.table || underscore(resourceConfig.name))
       .insert(attrs, resourceConfig.idAttribute)
       .then(ids => {
         if (attrs[resourceConfig.idAttribute]) {
-          return this.find(resourceConfig, attrs[resourceConfig.idAttribute]);
+          return this.find(resourceConfig, attrs[resourceConfig.idAttribute], options);
         } else if (ids.length) {
-          return this.find(resourceConfig, ids[0]);
+          return this.find(resourceConfig, ids[0], options);
         } else {
           throw new Error('Failed to create!');
         }
       });
   }
 
-  update(resourceConfig, id, attrs) {
+  update(resourceConfig, id, attrs, options) {
     attrs = DSUtils.removeCircular(DSUtils.omit(attrs, resourceConfig.relationFields || []));
     return this.query(resourceConfig.table || underscore(resourceConfig.name))
       .where(resourceConfig.idAttribute, toString(id))
       .update(attrs)
-      .then(() => this.find(resourceConfig, id));
+      .then(() => this.find(resourceConfig, id, options));
   }
 
   updateAll(resourceConfig, attrs, params, options) {

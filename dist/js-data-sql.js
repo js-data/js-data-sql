@@ -398,15 +398,15 @@ module.exports =
 	    }
 	  }, {
 	    key: 'create',
-	    value: function create(resourceConfig, attrs) {
+	    value: function create(resourceConfig, attrs, options) {
 	      var _this3 = this;
 
 	      attrs = DSUtils.removeCircular(DSUtils.omit(attrs, resourceConfig.relationFields || []));
 	      return this.query(resourceConfig.table || underscore(resourceConfig.name)).insert(attrs, resourceConfig.idAttribute).then(function (ids) {
 	        if (attrs[resourceConfig.idAttribute]) {
-	          return _this3.find(resourceConfig, attrs[resourceConfig.idAttribute]);
+	          return _this3.find(resourceConfig, attrs[resourceConfig.idAttribute], options);
 	        } else if (ids.length) {
-	          return _this3.find(resourceConfig, ids[0]);
+	          return _this3.find(resourceConfig, ids[0], options);
 	        } else {
 	          throw new Error('Failed to create!');
 	        }
@@ -414,12 +414,12 @@ module.exports =
 	    }
 	  }, {
 	    key: 'update',
-	    value: function update(resourceConfig, id, attrs) {
+	    value: function update(resourceConfig, id, attrs, options) {
 	      var _this4 = this;
 
 	      attrs = DSUtils.removeCircular(DSUtils.omit(attrs, resourceConfig.relationFields || []));
 	      return this.query(resourceConfig.table || underscore(resourceConfig.name)).where(resourceConfig.idAttribute, toString(id)).update(attrs).then(function () {
-	        return _this4.find(resourceConfig, id);
+	        return _this4.find(resourceConfig, id, options);
 	      });
 	    }
 	  }, {
