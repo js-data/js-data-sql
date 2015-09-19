@@ -46,14 +46,8 @@
     "test": "grunt test"
   },
   "dependencies": {
-    "mout": "0.11.0"
-  },
-  "peerDependencies": {
     "js-data": ">=2.0.0",
     "knex": ">=0.7.4",
-    "mariasql": ">=0.1.21",
-    "mysql": ">=2.5.5",
-    "pg": ">=4.3.0",
-    "sqlite3": ">=3.0.5"
+    "mout": "0.11.0"
   }
 }
