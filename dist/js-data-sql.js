@@ -55,10 +55,10 @@ module.exports =
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
-	var knex = __webpack_require__(2);
-	var JSData = __webpack_require__(3);
-	var map = __webpack_require__(4);
-	var underscore = __webpack_require__(1);
+	var knex = __webpack_require__(1);
+	var JSData = __webpack_require__(2);
+	var map = __webpack_require__(3);
+	var underscore = __webpack_require__(4);
 	var unique = __webpack_require__(5);
 	var toString = __webpack_require__(6);
 	var DSUtils = JSData.DSUtils;
@@ -111,34 +111,34 @@ module.exports =
 	          //} else if (op === 'isectNotEmpty') {
 	          //  subQuery = subQuery ? subQuery.and(row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0);
 	        } else if (op === 'in') {
-	          query = query.where(field, 'in', v);
-	        } else if (op === 'notIn') {
-	          query = query.whereNotIn(field, v);
-	        } else if (op === 'like') {
-	          query = query.where(field, 'like', v);
-	        } else if (op === '|==' || op === '|===') {
-	          query = query.orWhere(field, v);
-	        } else if (op === '|!=' || op === '|!==') {
-	          query = query.orWhere(field, '!=', v);
-	        } else if (op === '|>') {
-	          query = query.orWhere(field, '>', v);
-	        } else if (op === '|>=') {
-	          query = query.orWhere(field, '>=', v);
-	        } else if (op === '|<') {
-	          query = query.orWhere(field, '<', v);
-	        } else if (op === '|<=') {
-	          query = query.orWhere(field, '<=', v);
-	          //} else if (op === '|isectEmpty') {
-	          //  subQuery = subQuery ? subQuery.or(row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0);
-	          //} else if (op === '|isectNotEmpty') {
-	          //  subQuery = subQuery ? subQuery.or(row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0);
-	        } else if (op === '|in') {
-	          query = query.orWhere(field, 'in', v);
-	        } else if (op === '|notIn') {
-	          query = query.orWhereNotIn(field, v);
-	        } else {
-	          throw new Error('Operator not found');
-	        }
+	            query = query.where(field, 'in', v);
+	          } else if (op === 'notIn') {
+	            query = query.whereNotIn(field, v);
+	          } else if (op === 'like') {
+	            query = query.where(field, 'like', v);
+	          } else if (op === '|==' || op === '|===') {
+	            query = query.orWhere(field, v);
+	          } else if (op === '|!=' || op === '|!==') {
+	            query = query.orWhere(field, '!=', v);
+	          } else if (op === '|>') {
+	            query = query.orWhere(field, '>', v);
+	          } else if (op === '|>=') {
+	            query = query.orWhere(field, '>=', v);
+	          } else if (op === '|<') {
+	            query = query.orWhere(field, '<', v);
+	          } else if (op === '|<=') {
+	            query = query.orWhere(field, '<=', v);
+	            //} else if (op === '|isectEmpty') {
+	            //  subQuery = subQuery ? subQuery.or(row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0);
+	            //} else if (op === '|isectNotEmpty') {
+	            //  subQuery = subQuery ? subQuery.or(row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0);
+	          } else if (op === '|in') {
+	              query = query.orWhere(field, 'in', v);
+	            } else if (op === '|notIn') {
+	              query = query.orWhereNotIn(field, v);
+	            } else {
+	              throw new Error('Operator not found');
+	            }
 	      });
 	    });
 	  }
@@ -468,25 +468,25 @@ module.exports =
 /* 1 */
 /***/ function(module, exports) {
 
-	module.exports = require("mout/string/underscore");
+	module.exports = require("knex");
 
 /***/ },
 /* 2 */
 /***/ function(module, exports) {
 
-	module.exports = require("knex");
+	module.exports = require("js-data");
 
 /***/ },
 /* 3 */
 /***/ function(module, exports) {
 
-	module.exports = require("js-data");
+	module.exports = require("mout/array/map");
 
 /***/ },
 /* 4 */
 /***/ function(module, exports) {
 
-	module.exports = require("mout/array/map");
+	module.exports = require("mout/string/underscore");
 
 /***/ },
 /* 5 */

@@ -1,3 +1,7 @@
+##### 0.10.0 - 19 September 2015
+
+- #15, #16 - Removed the various database libs from peerDependencies.
+
 ##### 0.9.2 - 16 July 2015
 
 ###### Backwards compatible bug fixes

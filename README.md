@@ -22,6 +22,10 @@ __Supported Platforms:__
 ### Quick Start
 `npm install --save js-data js-data-sql`.
 
+You also need to install the driver for the database you want to connect to.
+
+`npm install --save <mysql|mariasql|pg|sqlite3>`
+
 ```js
 var JSData = require('js-data');
 var DSSqlAdapter = require('js-data-sql');
@@ -54,7 +58,7 @@ store.registerAdapter('sql', adapter, { default: true });
 
 ### Contributing
 
-First, support is handled via the [Mailing List](https://groups.io/org/groupsio/jsdata). Ask your questions there.
+First, support is handled via the [Gitter Channel](https://gitter.im/js-data/js-data) and the [Mailing List](https://groups.io/org/groupsio/jsdata). Ask your questions there.
 
 When submitting issues on GitHub, please include as much detail as possible to make debugging quick and easy.
 
@@ -64,16 +68,18 @@ When submitting issues on GitHub, please include as much detail as possible to m
 
 [Github Issues](https://github.com/js-data/js-data-sql/issues).
 
-#### Pull Requests
+#### Submitting Pull Requests
 
-1. Contribute to the issue that is the reason you'll be developing in the first place
+1. Contribute to the issue/discussion that is the reason you'll be developing in the first place
 1. Fork js-data-sql
-1. `git clone https://github.com/<you>/js-data-sql.git`
+1. `git clone git@github.com:<you>/js-data-sql.git`
 1. `cd js-data-sql; npm install; bower install;`
-1. `grunt go` (builds and starts a watch)
-1. (in another terminal) `grunt karma:dev` (runs the tests)
 1. Write your code, including relevant documentation and tests
-1. Submit a PR and we'll review
+1. Run `grunt test` (build and test)
+1. Your code will be linted and checked for formatting, the tests will be run
+1. The `dist/` folder & files will be generated, do NOT commit `dist/*`! They will be committed when a release is cut.
+1. Submit your PR and we'll review!
+1. Thanks!
 
 ### License
 
