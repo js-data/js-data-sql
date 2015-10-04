@@ -54,4 +54,32 @@ describe('DSSqlAdapter#find', function () {
       assert.equal(err.message, 'Not Found!');
     }
   });
+
+  it('should load belongsTo relations', function* () {
+    var profile = yield adapter.create(Profile, { email: 'foo@test.com' });
+    var user = yield adapter.create(User, {name: 'John', profileId: profile.id});
+    var post = yield adapter.create(Post, {content: 'foo', userId: user.id});
+    var comment = yield adapter.create(Comment, { content: 'test2', postId: post.id, userId: post.userId });
+
+    var comment = yield adapter.find(Comment, comment.id, {'with': ['user', 'user.profile', 'post', 'post.user']});
+    assert.isDefined(comment);
+    assert.isDefined(comment.post);
+    assert.isDefined(comment.post.user);
+    assert.isDefined(comment.user);
+    assert.isDefined(comment.user.profile);
+  });
+
+  it('should load hasMany and belongsTo relations', function* () {
+    var profile = yield adapter.create(Profile, { email: 'foo@test.com' });
+    var user = yield adapter.create(User, {name: 'John', profileId: profile.id});
+    var post = yield adapter.create(Post, {content: 'foo', userId: user.id});
+    var comment = yield adapter.create(Comment, { content: 'test2', postId: post.id, userId: post.userId });
+
+    var foundPost = yield adapter.find(Post, post.id, {'with': ['user', 'comment', 'comment.user', 'comment.user.profile']});
+    assert.isDefined(foundPost.comments);
+    assert.isDefined(foundPost.comments[0].user);
+    assert.isDefined(foundPost.comments[0].user.profile);
+    assert.isDefined(foundPost.user);
+  });
+
 });
