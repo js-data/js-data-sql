@@ -1,62 +1,43 @@
 describe('DSSqlAdapter#updateAll', function () {
-  it('should update all items', function () {
-    var id, id2;
-    return adapter.create(User, {name: 'John', age: 20})
-      .then(function (user) {
-        id = user.id;
-        return adapter.create(User, {name: 'John', age: 30});
-      }).then(function (user) {
-        id2 = user.id;
-        return adapter.findAll(User, {
-          name: 'John'
-        });
-      }).then(function (users) {
-        users.sort(function (a, b) {
-          return a.age - b.age;
-        });
-        assert.equalObjects(users, [{id: id, name: 'John', age: 20, profileId: null}, {
-          id: id2,
-          name: 'John',
-          age: 30,
-          profileId: null
-        }]);
-        return adapter.updateAll(User, {
-          name: 'Johnny'
-        }, {
-          name: 'John'
-        });
-      }).then(function (users) {
-        users.sort(function (a, b) {
-          return a.age - b.age;
-        });
-        assert.equalObjects(users, [{id: id, name: 'Johnny', age: 20, profileId: null}, {
-          id: id2,
-          name: 'Johnny',
-          age: 30,
-          profileId: null
-        }]);
-        return adapter.findAll(User, {
-          name: 'John'
-        });
-      }).then(function (users) {
-        assert.equalObjects(users, []);
-        assert.equal(users.length, 0);
-        return adapter.findAll(User, {
-          name: 'Johnny'
-        });
-      }).then(function (users) {
-        users.sort(function (a, b) {
-          return a.age - b.age;
-        });
-        assert.equalObjects(users, [{id: id, name: 'Johnny', age: 20, profileId: null}, {
-          id: id2,
-          name: 'Johnny',
-          age: 30,
-          profileId: null
-        }]);
-        return adapter.destroyAll(User);
-      }).then(function (destroyedUser) {
-        assert.isFalse(!!destroyedUser);
-      });
+  it('should update all items', function* () {
+    var user1 = yield adapter.create(User, {name: 'John', age: 20})
+    var userId1 = user1.id;
+
+    var user2 = yield adapter.create(User, {name: 'John', age: 30});
+    var userId2 = user2.id;
+
+    var users = yield adapter.findAll(User, { name: 'John' });
+    users.sort(function (a, b) {
+      return a.age - b.age;
+    });
+    assert.equalObjects(users, [
+      {id: userId1, name: 'John', age: 20, profileId: null},
+      {id: userId2, name: 'John', age: 30, profileId: null}
+    ]);
+
+    var users2 = yield adapter.updateAll(User, { name: 'Johnny' }, { name: 'John' });
+    users2.sort(function (a, b) {
+      return a.age - b.age;
+    });
+    assert.equalObjects(users2, [
+      {id: userId1, name: 'Johnny', age: 20, profileId: null},
+      {id: userId2, name: 'Johnny', age: 30, profileId: null}
+    ]);
+
+    var users3 = yield adapter.findAll(User, { name: 'John' });
+    assert.equalObjects(users3, []);
+    assert.equal(users3.length, 0);
+
+    var users4 = yield adapter.findAll(User, { name: 'Johnny' });
+    users4.sort(function (a, b) {
+      return a.age - b.age;
+    });
+    assert.equalObjects(users4, [
+      {id: userId1, name: 'Johnny', age: 20, profileId: null},
+      {id: userId2, name: 'Johnny', age: 30, profileId: null}
+    ]);
+
+    var destroyedUser = yield adapter.destroyAll(User);
+    assert.isFalse(!!destroyedUser);
   });
 });

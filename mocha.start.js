@@ -6,6 +6,8 @@ assert.equalObjects = function (a, b, m) {
   assert.deepEqual(JSON.parse(JSON.stringify(a)), JSON.parse(JSON.stringify(b)), m || 'Objects should be equal!');
 };
 var mocha = require('mocha');
+var coMocha = require('co-mocha');
+coMocha(mocha);
 var sinon = require('sinon');
 var JSData = require('js-data');
 JSData.DSUtils.Promise = require('bluebird');
