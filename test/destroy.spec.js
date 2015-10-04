@@ -1,20 +1,16 @@
 describe('DSSqlAdapter#destroy', function () {
-  it('should destroy a user from a Sql db', function () {
-    var id;
-    return adapter.create(User, {name: 'John'})
-      .then(function (user) {
-        id = user.id;
-        return adapter.destroy(User, user.id);
-      })
-      .then(function (user) {
-        assert.isFalse(!!user);
-        return adapter.find(User, id);
-      })
-      .then(function () {
-        throw new Error('Should not have reached here!');
-      })
-      .catch(function (err) {
-        assert.equal(err.message, 'Not Found!');
-      });
+  it('should destroy a user from a Sql db', function* () {
+    var createUser = yield adapter.create(User, {name: 'John'})
+    var id = createUser.id;
+
+    var destroyUser = yield adapter.destroy(User, createUser.id);
+    assert.isFalse(!!destroyUser);
+
+    try {
+      var findUser = yield adapter.find(User, id);
+      throw new Error('Should not have reached here!');
+    } catch (err) {
+      assert.equal(err.message, 'Not Found!');
+    }
   });
 });

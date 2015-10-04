@@ -1,27 +1,23 @@
 describe('DSSqlAdapter#create', function () {
-  it('should create a user in a sql db', function () {
-    var id;
-    return adapter.create(User, {name: 'John'}).then(function (user) {
-      id = user.id;
-      assert.equal(user.name, 'John');
-      assert.isDefined(user.id);
-      return adapter.find(User, user.id);
-    })
-      .then(function (user) {
-        assert.equal(user.name, 'John');
-        assert.isDefined(user.id);
-        assert.equalObjects(user, {id: id, name: 'John', age: null, profileId: null});
-        return adapter.destroy(User, user.id);
-      })
-      .then(function (user) {
-        assert.isFalse(!!user);
-        return adapter.find(User, id);
-      })
-      .then(function () {
-        throw new Error('Should not have reached here!');
-      })
-      .catch(function (err) {
-        assert.equal(err.message, 'Not Found!');
-      });
+  it('should create a user in a sql db', function* () {
+    var createUser = yield adapter.create(User, {name: 'John'});
+    var id = createUser.id;
+    assert.equal(createUser.name, 'John');
+    assert.isDefined(createUser.id);
+
+    var findUser = yield adapter.find(User, createUser.id);
+    assert.equal(findUser.name, 'John');
+    assert.isDefined(findUser.id);
+    assert.equalObjects(findUser, {id: id, name: 'John', age: null, profileId: null});
+
+    var destoryUser = yield adapter.destroy(User, findUser.id);
+    assert.isFalse(!!destoryUser);
+
+    try {
+      var findUser2 = yield adapter.find(User, id);
+      throw new Error('Should not have reached here!');
+    } catch(err) {
+      assert.equal(err.message, 'Not Found!');
+    }
   });
 });
