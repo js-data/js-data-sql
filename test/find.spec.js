@@ -50,7 +50,6 @@ describe('DSSqlAdapter#find', function () {
       yield adapter.find(User, userId);
       throw new Error('Should not have reached here!');
     } catch (err) {
-      console.log(err.stack);
       assert.equal(err.message, 'Not Found!');
     }
   });

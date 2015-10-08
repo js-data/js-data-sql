@@ -131,17 +131,12 @@ beforeEach(function () {
   global.DSErrors = globals.DSErrors;
 });
 
-afterEach(function (done) {
+afterEach(function* () {
   globals.adapter = null;
   global.adapter = null;
 
-  adapter.destroyAll(Comment).then(function () {
-    return adapter.destroyAll(Post);
-  }).then(function () {
-    return adapter.destroyAll(User);
-  }).then(function () {
-    return adapter.destroyAll(Profile);
-  }).then(function () {
-    done();
-  }, done);
+  yield adapter.destroyAll(Comment);
+  yield adapter.destroyAll(Post);
+  yield adapter.destroyAll(User);
+  yield adapter.destroyAll(Profile);
 });
