@@ -1,3 +1,9 @@
+##### 0.11.0 - 08 October 2015
+
+- #18, #21 - Support filtering across relations (apply joins / fix column name) by @techniq
+- #19, #20 - Use co-mocha for tests to simplify async flow. by @techniq
+- Project now enforces JS Standard Style
+
 ##### 0.10.0 - 19 September 2015
 
 - #15, #16 - Removed the various database libs from peerDependencies.
