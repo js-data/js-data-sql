@@ -168,6 +168,8 @@ describe('DSSqlAdapter#findAll', function () {
     assert.equal(comments[0].content, 'test1');
   });
 
-
+  it('should allow passing limit and offset as strings', function* () {
+    var user = yield adapter.findAll(User, {limit: '10', offset: '20'});
+  });
 
 });

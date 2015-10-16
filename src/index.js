@@ -142,11 +142,11 @@ function filterQuery (resourceConfig, params) {
   }
 
   if (params.skip) {
-    query = query.offset(params.offset)
+    query = query.offset(+params.offset)
   }
 
   if (params.limit) {
-    query = query.limit(params.limit)
+    query = query.limit(+params.limit)
   }
 
   return query
