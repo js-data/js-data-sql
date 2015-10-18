@@ -20,7 +20,8 @@ function getTable (resourceConfig) {
 }
 
 function filterQuery (resourceConfig, params) {
-  let query = this.query.select('*').from(getTable(resourceConfig))
+  let table = getTable(resourceConfig)
+  let query = this.query.select(`${table}.*`).from(table)
   params = params || {}
   params.where = params.where || {}
   params.orderBy = params.orderBy || params.sort
