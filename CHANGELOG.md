@@ -1,3 +1,7 @@
+##### 0.11.2 - 19 October 2015
+
+- Fixed build
+
 ##### 0.11.1 - 19 October 2015
 
 - #23 - Allow sending 'offset' and 'limit' params as strings.

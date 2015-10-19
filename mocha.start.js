@@ -58,8 +58,8 @@ beforeEach(function () {
   adapter = new DSSqlAdapter({
     client: 'mysql',
     connection: {
-      user: 'ubuntu',
-      database: 'circle_test'
+      user: process.env.C9_USER || 'ubuntu',
+      database: process.env.C9_USER ? 'c9' : 'circle_test'
       //user: 'root',
       //database: 'test'
     }

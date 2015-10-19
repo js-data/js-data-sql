@@ -371,4 +371,4 @@ class DSSqlAdapter {
   }
 }
 
-export default DSSqlAdapter
+module.exports = DSSqlAdapter
