@@ -8,7 +8,6 @@ assert.equalObjects = function (a, b, m) {
 var mocha = require('mocha');
 var coMocha = require('co-mocha');
 coMocha(mocha);
-var sinon = require('sinon');
 var JSData = require('js-data');
 JSData.DSUtils.Promise = require('bluebird');
 var DSSqlAdapter = require('./');
@@ -39,7 +38,6 @@ var globals = module.exports = {
   }],
   TYPES_EXCEPT_FUNCTION: ['string', 123, 123.123, null, undefined, {}, [], true, false],
   assert: assert,
-  sinon: sinon,
   adapter: undefined
 };
 

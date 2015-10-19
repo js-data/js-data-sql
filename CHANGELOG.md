@@ -1,3 +1,9 @@
+##### 0.11.1 - 19 October 2015
+
+- #23 - Allow sending 'offset' and 'limit' params as strings.
+- #24 - Do not return relation columns on parent when performing filter
+- Simplified build and devDependencies
+
 ##### 0.11.0 - 08 October 2015
 
 - #18, #21 - Support filtering across relations (apply joins / fix column name) by @techniq

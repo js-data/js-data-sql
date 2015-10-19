@@ -63,7 +63,7 @@ describe('DSSqlAdapter#findAll', function () {
     assert.isFalse(!!destroyedUser);
   });
 
-  it('should throw "Operator not found" error', function () {
+  it('should throw "Operator not found" error', function* () {
     var op = '>=<';
 
     assert.throw(function () {

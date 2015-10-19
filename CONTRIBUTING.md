@@ -15,9 +15,9 @@ When submitting issues on GitHub, please include as much detail as possible to m
 1. Contribute to the issue/discussion that is the reason you'll be developing in the first place
 1. Fork js-data-sql
 1. `git clone git@github.com:<you>/js-data-sql.git`
-1. `cd js-data-sql; npm install; bower install;`
+1. `cd js-data-sql; npm install;`
 1. Write your code, including relevant documentation and tests
-1. Run `grunt test` (build and test)
+1. Run `npm test` (build and test)
   - You need io.js or Node 4.x that includes generator support without a flag
 1. Your code will be linted and checked for formatting, the tests will be run
 1. The `dist/` folder & files will be generated, do NOT commit `dist/*`! They will be committed when a release is cut.
