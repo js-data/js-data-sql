@@ -33,6 +33,8 @@ store.registerAdapter('sql', adapter, { default: true });
 // "store" will now use the Sql adapter for all async operations
 ```
 
+Read about using [JSData on the Server](http://www.js-data.io/docs/jsdata-on-the-server).
+
 ### Changelog
 [CHANGELOG.md](https://github.com/js-data/js-data-sql/blob/master/CHANGELOG.md)
 
