@@ -1,23 +1,11 @@
 <img src="https://raw.githubusercontent.com/js-data/js-data/master/js-data.png" alt="js-data logo" title="js-data" align="right" width="64" height="64" />
 
-## js-data-sql [![npm version](https://img.shields.io/npm/v/js-data-sql.svg?style=flat-square)](https://www.npmjs.org/package/js-data-sql) [![Circle CI](https://img.shields.io/circleci/project/js-data/js-data-sql/master.svg?style=flat-square)](https://circleci.com/gh/js-data/js-data-sql/tree/master) [![npm downloads](https://img.shields.io/npm/dm/js-data-sql.svg?style=flat-square)](https://www.npmjs.org/package/js-data-sql) [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://github.com/js-data/js-data-sql/blob/master/LICENSE)
+## js-data-sql [![npm version](https://img.shields.io/npm/v/js-data-sql.svg?style=flat-square)](https://www.npmjs.org/package/js-data-sql) [![Circle CI](https://img.shields.io/circleci/project/js-data/js-data-sql/master.svg?style=flat-square)](https://circleci.com/gh/js-data/js-data-sql/tree/master) [![npm downloads](https://img.shields.io/npm/dm/js-data-sql.svg?style=flat-square)](https://www.npmjs.org/package/js-data-sql)
 
 Postgres/MySQL/MariaDB/SQLite3 adapter for [js-data](http://www.js-data.io/).
 
 ### API Documentation
 [DSSqlAdapter](http://www.js-data.io/docs/dssqladapter)
-
-### Project Status
-
-__Latest Release:__ [![Latest Release](https://img.shields.io/github/release/js-data/js-data-sql.svg?style=flat-square)](https://github.com/js-data/js-data-sql/releases)
-
-__Status:__
-
-[![Dependency Status](https://img.shields.io/gemnasium/js-data/js-data-sql.svg?style=flat-square)](https://gemnasium.com/js-data/js-data-sql) [![Codacy](https://img.shields.io/codacy/4da2bc1bbca74fd38c4532cb8bc8d40a.svg?style=flat-square)](https://www.codacy.com/public/jasondobry/js-data-sql/dashboard)
-
-__Supported Platforms:__
-
-[![node version](https://img.shields.io/badge/Node-0.10%2B-green.svg?style=flat-square)](https://github.com/js-data/js-data)
 
 ### Quick Start
 `npm install --save js-data js-data-sql`.
@@ -73,14 +61,28 @@ When submitting issues on GitHub, please include as much detail as possible to m
 1. Contribute to the issue/discussion that is the reason you'll be developing in the first place
 1. Fork js-data-sql
 1. `git clone git@github.com:<you>/js-data-sql.git`
-1. `cd js-data-sql; npm install; bower install;`
+1. `cd js-data-sql; npm install;`
 1. Write your code, including relevant documentation and tests
-1. Run `grunt test` (build and test)
+1. Run `npm test` (build and test)
   - You need io.js or Node 4.x that includes generator support without a flag
 1. Your code will be linted and checked for formatting, the tests will be run
 1. The `dist/` folder & files will be generated, do NOT commit `dist/*`! They will be committed when a release is cut.
 1. Submit your PR and we'll review!
 1. Thanks!
+
+#### Have write access?
+
+Here's how to make a release on the `master` branch:
+
+1. Bump `package.json` to the appropriate version.
+1. `npm test` must succeed.
+1. This time, the built `dist/js-data-sql.js` file _will_ be committed, so stage its changes.
+1. Mention the release version in the commit message, e.g. `Stable Version 1.2.3`
+1. Push to master.
+1. Create a git tag. Name it the version of the release, e.g. `1.2.3`
+  - Easiest way is to just create a GitHub Release, which will create the tag for you. Name the Release and the git tag the same thing.
+1. `git fetch origin` if you tagged it via GitHub Release, so you can get the tag on your local machine.
+1. `npm publish .` (Make sure you got the version bumped correctly!)
 
 ### License
 
