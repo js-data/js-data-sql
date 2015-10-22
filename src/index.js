@@ -65,14 +65,18 @@ function filterQuery (resourceConfig, params, options) {
 
             if (!joinedTables.some(t => t === relationPath.join('.'))) {
               let [relation] = localResourceConfig.relationList.filter(r => r.relation === relationName)
-              let table = getTable(localResourceConfig)
-              let localId = `${table}.${relation.localKey}`
+              if (relation) {
+                let table = getTable(localResourceConfig)
+                let localId = `${table}.${relation.localKey}`
 
-              let relationTable = getTable(relationResourceConfig)
-              let foreignId = `${relationTable}.${relationResourceConfig.idAttribute}`
+                let relationTable = getTable(relationResourceConfig)
+                let foreignId = `${relationTable}.${relationResourceConfig.idAttribute}`
 
-              query = query.join(relationTable, localId, foreignId)
-              joinedTables.push(relationPath.join('.'))
+                query = query.join(relationTable, localId, foreignId)
+                joinedTables.push(relationPath.join('.'))
+              } else {
+                // local column
+              }
             }
             localResourceConfig = relationResourceConfig
           }
