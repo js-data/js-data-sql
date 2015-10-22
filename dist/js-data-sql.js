@@ -53,10 +53,10 @@ module.exports =
 
 	function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
-	var knex = __webpack_require__(1);
-	var JSData = __webpack_require__(2);
-	var map = __webpack_require__(3);
-	var underscore = __webpack_require__(4);
+	var knex = __webpack_require__(2);
+	var JSData = __webpack_require__(3);
+	var map = __webpack_require__(4);
+	var underscore = __webpack_require__(1);
 	var unique = __webpack_require__(5);
 	var toString = __webpack_require__(6);
 	var DSUtils = JSData.DSUtils;
@@ -123,14 +123,18 @@ module.exports =
 
 	                var relation = _localResourceConfig$relationList$filter2[0];
 
-	                var _table = getTable(localResourceConfig);
-	                var localId = _table + '.' + relation.localKey;
+	                if (relation) {
+	                  var _table = getTable(localResourceConfig);
+	                  var localId = _table + '.' + relation.localKey;
 
-	                var relationTable = getTable(relationResourceConfig);
-	                var foreignId = relationTable + '.' + relationResourceConfig.idAttribute;
+	                  var relationTable = getTable(relationResourceConfig);
+	                  var foreignId = relationTable + '.' + relationResourceConfig.idAttribute;
 
-	                query = query.join(relationTable, localId, foreignId);
-	                joinedTables.push(relationPath.join('.'));
+	                  query = query.join(relationTable, localId, foreignId);
+	                  joinedTables.push(relationPath.join('.'));
+	                } else {
+	                  // local column
+	                }
 	              }
 	              localResourceConfig = relationResourceConfig;
 	            };
@@ -471,25 +475,25 @@ module.exports =
 /* 1 */
 /***/ function(module, exports) {
 
-	module.exports = require("knex");
+	module.exports = require("mout/string/underscore");
 
 /***/ },
 /* 2 */
 /***/ function(module, exports) {
 
-	module.exports = require("js-data");
+	module.exports = require("knex");
 
 /***/ },
 /* 3 */
 /***/ function(module, exports) {
 
-	module.exports = require("mout/array/map");
+	module.exports = require("js-data");
 
 /***/ },
 /* 4 */
 /***/ function(module, exports) {
 
-	module.exports = require("mout/string/underscore");
+	module.exports = require("mout/array/map");
 
 /***/ },
 /* 5 */
