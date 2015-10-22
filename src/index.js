@@ -19,9 +19,10 @@ function getTable (resourceConfig) {
   return resourceConfig.table || underscore(resourceConfig.name)
 }
 
-function filterQuery (resourceConfig, params) {
+function filterQuery (resourceConfig, params, options) {
   let table = getTable(resourceConfig)
-  let query = this.query.select(`${table}.*`).from(table)
+  let query = options && options.transaction || this.query
+  query = query.select(`${table}.*`).from(table)
   params = params || {}
   params.where = params.where || {}
   params.orderBy = params.orderBy || params.sort
@@ -297,7 +298,8 @@ class DSSqlAdapter {
     let instance
     options = options || {}
     options.with = options.with || []
-    return this.query
+    let query = options && options.transaction || this.query
+    return query
       .select('*')
       .from(getTable(resourceConfig))
       .where(resourceConfig.idAttribute, toString(id))
@@ -324,7 +326,8 @@ class DSSqlAdapter {
 
   create (resourceConfig, attrs, options) {
     attrs = DSUtils.removeCircular(DSUtils.omit(attrs, resourceConfig.relationFields || []))
-    return this.query(getTable(resourceConfig))
+    let query = options && options.transaction || this.query
+    return query(getTable(resourceConfig))
       .insert(attrs, resourceConfig.idAttribute)
       .then(ids => {
         if (attrs[resourceConfig.idAttribute]) {
@@ -339,7 +342,8 @@ class DSSqlAdapter {
 
   update (resourceConfig, id, attrs, options) {
     attrs = DSUtils.removeCircular(DSUtils.omit(attrs, resourceConfig.relationFields || []))
-    return this.query(getTable(resourceConfig))
+    let query = options && options.transaction || this.query
+    return query(getTable(resourceConfig))
       .where(resourceConfig.idAttribute, toString(id))
       .update(attrs)
       .then(() => this.find(resourceConfig, id, options))
@@ -360,8 +364,9 @@ class DSSqlAdapter {
     })
   }
 
-  destroy (resourceConfig, id) {
-    return this.query(getTable(resourceConfig))
+  destroy (resourceConfig, id, options) {
+    let query = options && options.transaction || this.query
+    return query(getTable(resourceConfig))
       .where(resourceConfig.idAttribute, toString(id))
       .del().then(() => undefined)
   }

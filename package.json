@@ -31,6 +31,7 @@
     "babel-loader": "5.3.2",
     "bluebird": "2.10.2",
     "chai": "3.3.0",
+    "co": "^4.6.0",
     "co-mocha": "1.1.2",
     "mocha": "2.3.3",
     "standard": "5.3.1",
