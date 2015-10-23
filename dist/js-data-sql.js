@@ -67,9 +67,10 @@ module.exports =
 	  return resourceConfig.table || underscore(resourceConfig.name);
 	}
 
-	function filterQuery(resourceConfig, params) {
+	function filterQuery(resourceConfig, params, options) {
 	  var table = getTable(resourceConfig);
-	  var query = this.query.select(table + '.*').from(table);
+	  var query = options && options.transaction || this.query;
+	  query = query.select(table + '.*').from(table);
 	  params = params || {};
 	  params.where = params.where || {};
 	  params.orderBy = params.orderBy || params.sort;
@@ -378,7 +379,8 @@ module.exports =
 	      var instance = undefined;
 	      options = options || {};
 	      options['with'] = options['with'] || [];
-	      return this.query.select('*').from(getTable(resourceConfig)).where(resourceConfig.idAttribute, toString(id)).then(function (rows) {
+	      var query = options && options.transaction || this.query;
+	      return query.select('*').from(getTable(resourceConfig)).where(resourceConfig.idAttribute, toString(id)).then(function (rows) {
 	        if (!rows.length) {
 	          return DSUtils.Promise.reject(new Error('Not Found!'));
 	        } else {
@@ -410,7 +412,8 @@ module.exports =
 	      var _this4 = this;
 
 	      attrs = DSUtils.removeCircular(DSUtils.omit(attrs, resourceConfig.relationFields || []));
-	      return this.query(getTable(resourceConfig)).insert(attrs, resourceConfig.idAttribute).then(function (ids) {
+	      var query = options && options.transaction || this.query;
+	      return query(getTable(resourceConfig)).insert(attrs, resourceConfig.idAttribute).then(function (ids) {
 	        if (attrs[resourceConfig.idAttribute]) {
 	          return _this4.find(resourceConfig, attrs[resourceConfig.idAttribute], options);
 	        } else if (ids.length) {
@@ -426,7 +429,8 @@ module.exports =
 	      var _this5 = this;
 
 	      attrs = DSUtils.removeCircular(DSUtils.omit(attrs, resourceConfig.relationFields || []));
-	      return this.query(getTable(resourceConfig)).where(resourceConfig.idAttribute, toString(id)).update(attrs).then(function () {
+	      var query = options && options.transaction || this.query;
+	      return query(getTable(resourceConfig)).where(resourceConfig.idAttribute, toString(id)).update(attrs).then(function () {
 	        return _this5.find(resourceConfig, id, options);
 	      });
 	    }
@@ -452,8 +456,9 @@ module.exports =
 	    }
 	  }, {
 	    key: 'destroy',
-	    value: function destroy(resourceConfig, id) {
-	      return this.query(getTable(resourceConfig)).where(resourceConfig.idAttribute, toString(id)).del().then(function () {
+	    value: function destroy(resourceConfig, id, options) {
+	      var query = options && options.transaction || this.query;
+	      return query(getTable(resourceConfig)).where(resourceConfig.idAttribute, toString(id)).del().then(function () {
 	        return undefined;
 	      });
 	    }
