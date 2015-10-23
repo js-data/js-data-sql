@@ -19,145 +19,6 @@ function getTable (resourceConfig) {
   return resourceConfig.table || underscore(resourceConfig.name)
 }
 
-function filterQuery (resourceConfig, params, options) {
-  let table = getTable(resourceConfig)
-  let query = options && options.transaction || this.query
-  query = query.select(`${table}.*`).from(table)
-  params = params || {}
-  params.where = params.where || {}
-  params.orderBy = params.orderBy || params.sort
-  params.skip = params.skip || params.offset
-
-  let joinedTables = []
-
-  DSUtils.forEach(DSUtils.keys(params), k => {
-    let v = params[k]
-    if (!DSUtils.contains(reserved, k)) {
-      if (DSUtils.isObject(v)) {
-        params.where[k] = v
-      } else {
-        params.where[k] = {
-          '==': v
-        }
-      }
-      delete params[k]
-    }
-  })
-
-  if (!DSUtils.isEmpty(params.where)) {
-    DSUtils.forOwn(params.where, (criteria, field) => {
-      if (!DSUtils.isObject(criteria)) {
-        params.where[field] = {
-          '==': criteria
-        }
-      }
-
-      DSUtils.forOwn(criteria, (v, op) => {
-        if (DSUtils.contains(field, '.')) {
-          let parts = field.split('.')
-          let localResourceConfig = resourceConfig
-
-          let relationPath = []
-          while (parts.length >= 2) {
-            let relationName = parts.shift()
-            let relationResourceConfig = resourceConfig.getResource(relationName)
-            relationPath.push(relationName)
-
-            if (!joinedTables.some(t => t === relationPath.join('.'))) {
-              let [relation] = localResourceConfig.relationList.filter(r => r.relation === relationName)
-              if (relation) {
-                let table = getTable(localResourceConfig)
-                let localId = `${table}.${relation.localKey}`
-
-                let relationTable = getTable(relationResourceConfig)
-                let foreignId = `${relationTable}.${relationResourceConfig.idAttribute}`
-
-                query = query.join(relationTable, localId, foreignId)
-                joinedTables.push(relationPath.join('.'))
-              } else {
-                // local column
-              }
-            }
-            localResourceConfig = relationResourceConfig
-          }
-
-          field = `${getTable(localResourceConfig)}.${parts[0]}`
-        }
-
-        if (op === '==' || op === '===') {
-          query = query.where(field, v)
-        } else if (op === '!=' || op === '!==') {
-          query = query.where(field, '!=', v)
-        } else if (op === '>') {
-          query = query.where(field, '>', v)
-        } else if (op === '>=') {
-          query = query.where(field, '>=', v)
-        } else if (op === '<') {
-          query = query.where(field, '<', v)
-        } else if (op === '<=') {
-          query = query.where(field, '<=', v)
-        // } else if (op === 'isectEmpty') {
-        //  subQuery = subQuery ? subQuery.and(row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)
-        // } else if (op === 'isectNotEmpty') {
-        //  subQuery = subQuery ? subQuery.and(row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)
-        } else if (op === 'in') {
-          query = query.where(field, 'in', v)
-        } else if (op === 'notIn') {
-          query = query.whereNotIn(field, v)
-        } else if (op === 'like') {
-          query = query.where(field, 'like', v)
-        } else if (op === '|==' || op === '|===') {
-          query = query.orWhere(field, v)
-        } else if (op === '|!=' || op === '|!==') {
-          query = query.orWhere(field, '!=', v)
-        } else if (op === '|>') {
-          query = query.orWhere(field, '>', v)
-        } else if (op === '|>=') {
-          query = query.orWhere(field, '>=', v)
-        } else if (op === '|<') {
-          query = query.orWhere(field, '<', v)
-        } else if (op === '|<=') {
-          query = query.orWhere(field, '<=', v)
-        // } else if (op === '|isectEmpty') {
-        //  subQuery = subQuery ? subQuery.or(row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)
-        // } else if (op === '|isectNotEmpty') {
-        //  subQuery = subQuery ? subQuery.or(row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)
-        } else if (op === '|in') {
-          query = query.orWhere(field, 'in', v)
-        } else if (op === '|notIn') {
-          query = query.orWhereNotIn(field, v)
-        } else {
-          throw new Error('Operator not found')
-        }
-      })
-    })
-  }
-
-  if (params.orderBy) {
-    if (DSUtils.isString(params.orderBy)) {
-      params.orderBy = [
-        [params.orderBy, 'asc']
-      ]
-    }
-    for (var i = 0; i < params.orderBy.length; i++) {
-      if (DSUtils.isString(params.orderBy[i])) {
-        params.orderBy[i] = [params.orderBy[i], 'asc']
-      }
-      query = DSUtils.upperCase(params.orderBy[i][1]) === 'DESC' ? query.orderBy(params.orderBy[i][0], 'desc') : query.orderBy(params.orderBy[i][0], 'asc')
-    }
-  }
-
-  if (params.skip) {
-    query = query.offset(+params.offset)
-  }
-
-  if (params.limit) {
-    query = query.limit(+params.limit)
-  }
-
-  return query
-}
-
 function loadWithRelations (items, resourceConfig, options) {
   let tasks = []
   let instance = Array.isArray(items) ? null : items
@@ -322,7 +183,7 @@ class DSSqlAdapter {
     let items = null
     options = options || {}
     options.with = options.with || []
-    return filterQuery.call(this, resourceConfig, params, options).then(_items => {
+    return this.filterQuery(resourceConfig, params, options).then(_items => {
       items = _items
       return loadWithRelations.call(this, _items, resourceConfig, options)
     }).then(() => items)
@@ -355,15 +216,15 @@ class DSSqlAdapter {
 
   updateAll (resourceConfig, attrs, params, options) {
     attrs = DSUtils.removeCircular(DSUtils.omit(attrs, resourceConfig.relationFields || []))
-    return filterQuery.call(this, resourceConfig, params, options).then(items => {
+    return this.filterQuery(resourceConfig, params, options).then(items => {
       return map(items, item => item[resourceConfig.idAttribute])
     }).then(ids => {
-      return filterQuery.call(this, resourceConfig, params, options).update(attrs).then(() => {
+      return this.filterQuery(resourceConfig, params, options).update(attrs).then(() => {
         let _params = {where: {}}
         _params.where[resourceConfig.idAttribute] = {
           'in': ids
         }
-        return filterQuery.call(this, resourceConfig, _params, options)
+        return this.filterQuery(resourceConfig, _params, options)
       })
     })
   }
@@ -376,7 +237,146 @@ class DSSqlAdapter {
   }
 
   destroyAll (resourceConfig, params, options) {
-    return filterQuery.call(this, resourceConfig, params, options).del().then(() => undefined)
+    return this.filterQuery(resourceConfig, params, options).del().then(() => undefined)
+  }
+
+  filterQuery (resourceConfig, params, options) {
+    let table = getTable(resourceConfig)
+    let query = options && options.transaction || this.query
+    query = query.select(`${table}.*`).from(table)
+    params = params || {}
+    params.where = params.where || {}
+    params.orderBy = params.orderBy || params.sort
+    params.skip = params.skip || params.offset
+
+    let joinedTables = []
+
+    DSUtils.forEach(DSUtils.keys(params), k => {
+      let v = params[k]
+      if (!DSUtils.contains(reserved, k)) {
+        if (DSUtils.isObject(v)) {
+          params.where[k] = v
+        } else {
+          params.where[k] = {
+            '==': v
+          }
+        }
+        delete params[k]
+      }
+    })
+
+    if (!DSUtils.isEmpty(params.where)) {
+      DSUtils.forOwn(params.where, (criteria, field) => {
+        if (!DSUtils.isObject(criteria)) {
+          params.where[field] = {
+            '==': criteria
+          }
+        }
+
+        DSUtils.forOwn(criteria, (v, op) => {
+          if (DSUtils.contains(field, '.')) {
+            let parts = field.split('.')
+            let localResourceConfig = resourceConfig
+
+            let relationPath = []
+            while (parts.length >= 2) {
+              let relationName = parts.shift()
+              let relationResourceConfig = resourceConfig.getResource(relationName)
+              relationPath.push(relationName)
+
+              if (!joinedTables.some(t => t === relationPath.join('.'))) {
+                let [relation] = localResourceConfig.relationList.filter(r => r.relation === relationName)
+                if (relation) {
+                  let table = getTable(localResourceConfig)
+                  let localId = `${table}.${relation.localKey}`
+
+                  let relationTable = getTable(relationResourceConfig)
+                  let foreignId = `${relationTable}.${relationResourceConfig.idAttribute}`
+
+                  query = query.join(relationTable, localId, foreignId)
+                  joinedTables.push(relationPath.join('.'))
+                } else {
+                  // local column
+                }
+              }
+              localResourceConfig = relationResourceConfig
+            }
+
+            field = `${getTable(localResourceConfig)}.${parts[0]}`
+          }
+
+          if (op === '==' || op === '===') {
+            query = query.where(field, v)
+          } else if (op === '!=' || op === '!==') {
+            query = query.where(field, '!=', v)
+          } else if (op === '>') {
+            query = query.where(field, '>', v)
+          } else if (op === '>=') {
+            query = query.where(field, '>=', v)
+          } else if (op === '<') {
+            query = query.where(field, '<', v)
+          } else if (op === '<=') {
+            query = query.where(field, '<=', v)
+          // } else if (op === 'isectEmpty') {
+          //  subQuery = subQuery ? subQuery.and(row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)
+          // } else if (op === 'isectNotEmpty') {
+          //  subQuery = subQuery ? subQuery.and(row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)
+          } else if (op === 'in') {
+            query = query.where(field, 'in', v)
+          } else if (op === 'notIn') {
+            query = query.whereNotIn(field, v)
+          } else if (op === 'like') {
+            query = query.where(field, 'like', v)
+          } else if (op === '|==' || op === '|===') {
+            query = query.orWhere(field, v)
+          } else if (op === '|!=' || op === '|!==') {
+            query = query.orWhere(field, '!=', v)
+          } else if (op === '|>') {
+            query = query.orWhere(field, '>', v)
+          } else if (op === '|>=') {
+            query = query.orWhere(field, '>=', v)
+          } else if (op === '|<') {
+            query = query.orWhere(field, '<', v)
+          } else if (op === '|<=') {
+            query = query.orWhere(field, '<=', v)
+          // } else if (op === '|isectEmpty') {
+          //  subQuery = subQuery ? subQuery.or(row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)
+          // } else if (op === '|isectNotEmpty') {
+          //  subQuery = subQuery ? subQuery.or(row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)
+          } else if (op === '|in') {
+            query = query.orWhere(field, 'in', v)
+          } else if (op === '|notIn') {
+            query = query.orWhereNotIn(field, v)
+          } else {
+            throw new Error('Operator not found')
+          }
+        })
+      })
+    }
+
+    if (params.orderBy) {
+      if (DSUtils.isString(params.orderBy)) {
+        params.orderBy = [
+          [params.orderBy, 'asc']
+        ]
+      }
+      for (var i = 0; i < params.orderBy.length; i++) {
+        if (DSUtils.isString(params.orderBy[i])) {
+          params.orderBy[i] = [params.orderBy[i], 'asc']
+        }
+        query = DSUtils.upperCase(params.orderBy[i][1]) === 'DESC' ? query.orderBy(params.orderBy[i][0], 'desc') : query.orderBy(params.orderBy[i][0], 'asc')
+      }
+    }
+
+    if (params.skip) {
+      query = query.offset(+params.offset)
+    }
+
+    if (params.limit) {
+      query = query.limit(+params.limit)
+    }
+
+    return query
   }
 }
 
