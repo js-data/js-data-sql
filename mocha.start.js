@@ -38,7 +38,8 @@ var globals = module.exports = {
   }],
   TYPES_EXCEPT_FUNCTION: ['string', 123, 123.123, null, undefined, {}, [], true, false],
   assert: assert,
-  adapter: undefined
+  adapter: undefined,
+  co: require('co')
 };
 
 var test = new mocha();
