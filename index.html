@@ -31,7 +31,7 @@
         <p><img src="https://raw.githubusercontent.com/js-data/js-data/master/js-data.png" alt="js-data logo" title="js-data" align="right" width="64" height="64"></p>
 
 <h2>
-<a id="js-data-sql---" class="anchor" href="#js-data-sql---" aria-hidden="true"><span class="octicon octicon-link"></span></a>js-data-sql <a href="https://www.npmjs.org/package/js-data-sql"><img src="https://img.shields.io/npm/v/js-data-sql.svg?style=flat-square" alt="npm version"></a> <a href="https://circleci.com/gh/js-data/js-data-sql/tree/master"><img src="https://img.shields.io/circleci/project/js-data/js-data-sql/master.svg?style=flat-square" alt="Circle CI"></a> <a href="https://www.npmjs.org/package/js-data-sql"><img src="https://img.shields.io/npm/dm/js-data-sql.svg?style=flat-square" alt="npm downloads"></a>
+<a id="js-data-sql------" class="anchor" href="#js-data-sql------" aria-hidden="true"><span class="octicon octicon-link"></span></a>js-data-sql <a href="http://slack.js-data.io"><img src="http://slack.js-data.io/badge.svg" alt="Slack Status"></a> <a href="https://www.npmjs.org/package/js-data-sql"><img src="https://img.shields.io/npm/v/js-data-sql.svg?style=flat" alt="npm version"></a> <a href="https://circleci.com/gh/js-data/js-data-sql/tree/master"><img src="https://img.shields.io/circleci/project/js-data/js-data-sql/master.svg?style=flat" alt="Circle CI"></a> <a href="https://www.npmjs.org/package/js-data-sql"><img src="https://img.shields.io/npm/dm/js-data-sql.svg?style=flat" alt="npm downloads"></a> <a href="https://coveralls.io/github/js-data/js-data-sql?branch=master"><img src="https://img.shields.io/coveralls/js-data/js-data-sql/master.svg?style=flat" alt="Coverage Status"></a> <a href="https://www.codacy.com/app/jasondobry/js-data-sql/dashboard"><img src="https://img.shields.io/codacy/307c2e9399394fdaa5354cda7329516d.svg" alt="Codacy"></a>
 </h2>
 
 <p>Postgres/MySQL/MariaDB/SQLite3 adapter for <a href="http://www.js-data.io/">js-data</a>.</p>
@@ -44,7 +44,7 @@
 <h3>
 <a id="quick-start" class="anchor" href="#quick-start" aria-hidden="true"><span class="octicon octicon-link"></span></a>Quick Start</h3>
 
-<p><code>npm install --save js-data js-data-sql</code>.</p>
+<p><code>npm install --save knex js-data js-data-sql</code>.</p>
 
 <p>You also need to install the driver for the database you want to connect to.</p>
 
@@ -79,7 +79,7 @@ store.registerAdapter(<span class="pl-s"><span class="pl-pds">'</span>sql<span c
 
 <ul>
 <li>
-<a href="https://gitter.im/js-data/js-data">Gitter Channel</a> - Better than IRC!</li>
+<a href="http://slack.js-data.io">Slack Channel</a> - Better than IRC!</li>
 <li><a href="http://www.js-data.io/blog">Announcements</a></li>
 <li>
 <a href="https://groups.io/org/groupsio/jsdata">Mailing List</a> - Ask your questions!</li>
@@ -93,14 +93,20 @@ store.registerAdapter(<span class="pl-s"><span class="pl-pds">'</span>sql<span c
 <h3>
 <a id="contributing" class="anchor" href="#contributing" aria-hidden="true"><span class="octicon octicon-link"></span></a>Contributing</h3>
 
-<p>First, support is handled via the <a href="https://gitter.im/js-data/js-data">Gitter Channel</a> and the <a href="https://groups.io/org/groupsio/jsdata">Mailing List</a>. Ask your questions there.</p>
+<p>First, support is handled via the <a href="http://slack.js-data.io">Slack Channel</a> and
+the <a href="https://groups.io/org/groupsio/jsdata">Mailing List</a>. Ask your questions
+there.</p>
 
-<p>When submitting issues on GitHub, please include as much detail as possible to make debugging quick and easy.</p>
+<p>When submitting issues on GitHub, please include as much detail as possible to
+make debugging quick and easy.</p>
 
 <ul>
-<li>good - Your versions of js-data, js-data-sql, etc., relevant console logs/error, code examples that revealed the issue</li>
-<li>better - A <a href="http://plnkr.co/">plnkr</a>, <a href="http://jsfiddle.net/">fiddle</a>, or <a href="http://jsbin.com/?html,output">bin</a> that demonstrates the issue</li>
-<li>best - A Pull Request that fixes the issue, including test coverage for the issue and the fix</li>
+<li>good - Your versions of js-data, js-data-sql, etc., relevant console
+logs/error, code examples that revealed the issue</li>
+<li>better - A <a href="http://plnkr.co/">plnkr</a>, <a href="http://jsfiddle.net/">fiddle</a>, or
+<a href="http://jsbin.com/?html,output">bin</a> that demonstrates the issue</li>
+<li>best - A Pull Request that fixes the issue, including test coverage for the
+issue and the fix</li>
 </ul>
 
 <p><a href="https://github.com/js-data/js-data-sql/issues">Github Issues</a>.</p>
@@ -109,7 +115,8 @@ store.registerAdapter(<span class="pl-s"><span class="pl-pds">'</span>sql<span c
 <a id="submitting-pull-requests" class="anchor" href="#submitting-pull-requests" aria-hidden="true"><span class="octicon octicon-link"></span></a>Submitting Pull Requests</h4>
 
 <ol>
-<li>Contribute to the issue/discussion that is the reason you'll be developing in the first place</li>
+<li>Contribute to the issue/discussion that is the reason you'll be developing in
+the first place</li>
 <li>Fork js-data-sql</li>
 <li><code>git clone git@github.com:&lt;you&gt;/js-data-sql.git</code></li>
 <li><code>cd js-data-sql; npm install;</code></li>
@@ -121,7 +128,8 @@ store.registerAdapter(<span class="pl-s"><span class="pl-pds">'</span>sql<span c
 </ul>
 </li>
 <li>Your code will be linted and checked for formatting, the tests will be run</li>
-<li>The <code>dist/</code> folder &amp; files will be generated, do NOT commit <code>dist/*</code>! They will be committed when a release is cut.</li>
+<li>The <code>dist/</code> folder &amp; files will be generated, do NOT commit <code>dist/*</code>! They
+will be committed when a release is cut.</li>
 <li>Submit your PR and we'll review!</li>
 <li>Thanks!</li>
 </ol>
