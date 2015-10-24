@@ -242,8 +242,18 @@ class DSSqlAdapter {
 
   filterQuery (resourceConfig, params, options) {
     let table = getTable(resourceConfig)
-    let query = options && options.transaction || this.query
-    query = query.select(`${table}.*`).from(table)
+    let query
+
+    if (params instanceof Object.getPrototypeOf(this.query.client).QueryBuilder) {
+      query = params
+      params = {}
+    } else if (options && options.query) {
+      query = options.query || this.query
+    } else {
+      query = options && options.transaction || this.query
+      query = query.select(`${table}.*`).from(table)
+    }
+
     params = params || {}
     params.where = params.where || {}
     params.orderBy = params.orderBy || params.sort

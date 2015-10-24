@@ -1,4 +1,3 @@
-var Promise = require('bluebird');
 describe('DSSqlAdapter#findAll', function () {
   it('should filter users', function* () {
     var users = yield adapter.findAll(User, { age: 30 });
