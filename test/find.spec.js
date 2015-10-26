@@ -1,4 +1,3 @@
-var Promise = require('bluebird');
 describe('DSSqlAdapter#find', function () {
   it('should find a user in a Sql db', function* () {
     var user = yield adapter.create(User, {name: 'John'});
