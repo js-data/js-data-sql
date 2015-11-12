@@ -1,6 +1,5 @@
 let knex = require('knex')
 let JSData = require('js-data')
-let map = require('mout/array/map')
 let underscore = require('mout/string/underscore')
 let unique = require('mout/array/unique')
 let toString = require('mout/lang/toString')
@@ -53,7 +52,7 @@ function loadWithRelations (items, resourceConfig, options) {
       if (instance) {
         foreignKeyFilter = { '==': instance[resourceConfig.idAttribute] }
       } else {
-        foreignKeyFilter = { 'in': map(items, item => item[resourceConfig.idAttribute]) }
+        foreignKeyFilter = { 'in': items.map(function (item) { return item[resourceConfig.idAttribute] }) }
       }
       task = this.findAll(resourceConfig.getResource(relationName), {
         where: {
@@ -124,7 +123,7 @@ function loadWithRelations (items, resourceConfig, options) {
         task = this.findAll(resourceConfig.getResource(relationName), {
           where: {
             [relationDef.idAttribute]: {
-              'in': DSUtils.filter(map(items, item => DSUtils.get(item, def.localKey)), x => x)
+              'in': DSUtils.filter(items.map(function (item) { return DSUtils.get(item, def.localKey) }), x => x)
             }
           }
         }, __options).then(relatedItems => {
@@ -217,7 +216,7 @@ class DSSqlAdapter {
   updateAll (resourceConfig, attrs, params, options) {
     attrs = DSUtils.removeCircular(DSUtils.omit(attrs, resourceConfig.relationFields || []))
     return this.filterQuery(resourceConfig, params, options).then(items => {
-      return map(items, item => item[resourceConfig.idAttribute])
+      return items.map(function (item) { return item[resourceConfig.idAttribute] })
     }).then(ids => {
       return this.filterQuery(resourceConfig, params, options).update(attrs).then(() => {
         let _params = {where: {}}

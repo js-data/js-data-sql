@@ -1,5 +1,4 @@
 module.exports = {
-  debug: true,
   entry: './src/index.js',
   output: {
     filename: './dist/js-data-sql.js',
@@ -7,18 +6,22 @@ module.exports = {
     library: 'js-data-sql'
   },
   externals: [
-    'mout/array/map',
-    'mout/lang/toString',
     'mout/string/underscore',
+    'mout/lang/toString',
     'mout/array/unique',
     'js-data',
     'knex'
   ],
   module: {
-    loaders: [{
-      test: /(src)(.+)\.js$/,
-      exclude: /node_modules/,
-      loader: 'babel-loader?blacklist=useStrict'
-    }]
+    loaders: [
+      {
+        test: /(src)(.+)\.js$/,
+        exclude: /node_modules/,
+        loader: 'babel',
+        query: {
+          presets: ['es2015']
+        }
+      }
+    ]
   }
 };
