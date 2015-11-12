@@ -44,10 +44,11 @@ TestRunner.init({
 });
 
 beforeEach(function () {
-  globals.DSUtils = global.DSUtils = this.$$DSUtils
-  globals.DSErrors = global.DSErrors = this.$$DSErrors
-  globals.adapter = global.adapter = this.$$adapter
-  globals.User = global.User = this.$$User
+  globals.DSUtils = global.DSUtils = this.$$DSUtils;
+  globals.DSErrors = global.DSErrors = this.$$DSErrors;
+  globals.adapter = global.adapter = this.$$adapter;
+  globals.store = global.store = this.$$store;
+  globals.User = global.User = this.$$User;
   globals.Profile = global.Profile = this.$$Profile;
   globals.Post = global.Post = this.$$Post;
   globals.Comment = global.Comment = this.$$Comment;

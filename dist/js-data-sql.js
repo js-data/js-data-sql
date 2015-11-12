@@ -45,20 +45,21 @@ module.exports =
 /* 0 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i['return']) _i['return'](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError('Invalid attempt to destructure non-iterable instance'); } }; })();
+	'use strict';
 
-	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+	var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; })();
 
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
 	var knex = __webpack_require__(1);
 	var JSData = __webpack_require__(2);
-	var map = __webpack_require__(3);
-	var underscore = __webpack_require__(4);
-	var unique = __webpack_require__(5);
-	var toString = __webpack_require__(6);
+	var underscore = __webpack_require__(3);
+	var unique = __webpack_require__(4);
+	var toString = __webpack_require__(5);
 	var DSUtils = JSData.DSUtils;
 
 	var reserved = ['orderBy', 'sort', 'limit', 'offset', 'skip', 'where'];
@@ -78,9 +79,9 @@ module.exports =
 	    var relationDef = resourceConfig.getResource(relationName);
 
 	    var containedName = null;
-	    if (DSUtils.contains(options['with'], relationName)) {
+	    if (DSUtils.contains(options.with, relationName)) {
 	      containedName = relationName;
-	    } else if (DSUtils.contains(options['with'], def.localField)) {
+	    } else if (DSUtils.contains(options.with, def.localField)) {
 	      containedName = def.localField;
 	    } else {
 	      return;
@@ -89,7 +90,7 @@ module.exports =
 	    var __options = DSUtils.deepMixIn({}, options.orig ? options.orig() : options);
 
 	    // Filter to only properties under current relation
-	    __options['with'] = options['with'].filter(function (relation) {
+	    __options.with = options.with.filter(function (relation) {
 	      return relation !== containedName && relation.indexOf(containedName) === 0 && relation.length >= containedName.length && relation[containedName.length] === '.';
 	    }).map(function (relation) {
 	      return relation.substr(containedName.length + 1);
@@ -102,7 +103,7 @@ module.exports =
 	      if (instance) {
 	        foreignKeyFilter = { '==': instance[resourceConfig.idAttribute] };
 	      } else {
-	        foreignKeyFilter = { 'in': map(items, function (item) {
+	        foreignKeyFilter = { 'in': items.map(function (item) {
 	            return item[resourceConfig.idAttribute];
 	          }) };
 	      }
@@ -178,7 +179,7 @@ module.exports =
 	      } else {
 	        task = _this.findAll(resourceConfig.getResource(relationName), {
 	          where: _defineProperty({}, relationDef.idAttribute, {
-	            'in': DSUtils.filter(map(items, function (item) {
+	            'in': DSUtils.filter(items.map(function (item) {
 	              return DSUtils.get(item, def.localKey);
 	            }), function (x) {
 	              return x;
@@ -225,7 +226,7 @@ module.exports =
 
 	      var instance = undefined;
 	      options = options || {};
-	      options['with'] = options['with'] || [];
+	      options.with = options.with || [];
 	      var query = options && options.transaction || this.query;
 	      return query.select('*').from(getTable(resourceConfig)).where(resourceConfig.idAttribute, toString(id)).then(function (rows) {
 	        if (!rows.length) {
@@ -245,7 +246,7 @@ module.exports =
 
 	      var items = null;
 	      options = options || {};
-	      options['with'] = options['with'] || [];
+	      options.with = options.with || [];
 	      return this.filterQuery(resourceConfig, params, options).then(function (_items) {
 	        items = _items;
 	        return loadWithRelations.call(_this3, _items, resourceConfig, options);
@@ -288,7 +289,7 @@ module.exports =
 
 	      attrs = DSUtils.removeCircular(DSUtils.omit(attrs, resourceConfig.relationFields || []));
 	      return this.filterQuery(resourceConfig, params, options).then(function (items) {
-	        return map(items, function (item) {
+	        return items.map(function (item) {
 	          return item[resourceConfig.idAttribute];
 	        });
 	      }).then(function (ids) {
@@ -369,7 +370,7 @@ module.exports =
 
 	                var relationPath = [];
 
-	                var _loop = function () {
+	                var _loop = function _loop() {
 	                  var relationName = parts.shift();
 	                  var relationResourceConfig = resourceConfig.getResource(relationName);
 	                  relationPath.push(relationName);
@@ -377,13 +378,13 @@ module.exports =
 	                  if (!joinedTables.some(function (t) {
 	                    return t === relationPath.join('.');
 	                  })) {
-	                    var _localResourceConfig$relationList$filter = localResourceConfig.relationList.filter(function (r) {
+	                    var _localResourceConfig$ = localResourceConfig.relationList.filter(function (r) {
 	                      return r.relation === relationName;
 	                    });
 
-	                    var _localResourceConfig$relationList$filter2 = _slicedToArray(_localResourceConfig$relationList$filter, 1);
+	                    var _localResourceConfig$2 = _slicedToArray(_localResourceConfig$, 1);
 
-	                    var relation = _localResourceConfig$relationList$filter2[0];
+	                    var relation = _localResourceConfig$2[0];
 
 	                    if (relation) {
 	                      var _table = getTable(localResourceConfig);
@@ -503,22 +504,16 @@ module.exports =
 /* 3 */
 /***/ function(module, exports) {
 
-	module.exports = require("mout/array/map");
+	module.exports = require("mout/string/underscore");
 
 /***/ },
 /* 4 */
 /***/ function(module, exports) {
 
-	module.exports = require("mout/string/underscore");
-
-/***/ },
-/* 5 */
-/***/ function(module, exports) {
-
 	module.exports = require("mout/array/unique");
 
 /***/ },
-/* 6 */
+/* 5 */
 /***/ function(module, exports) {
 
 	module.exports = require("mout/lang/toString");
