@@ -13,7 +13,7 @@ describe('DSSqlAdapter#create + transaction', function () {
     assert.isObject(findUser, 'user committed to database');
     assert.equal(findUser.name, 'Jane');
     assert.isDefined(findUser.id);
-    assert.equalObjects(findUser, {id: id, name: 'Jane', age: null, profileId: null});
+    assert.equalObjects(findUser, {id: id, name: 'Jane', age: null, profileId: null, addressId: null});
   });
 
   it('rollback should not persist created user in a sql db', function* () {

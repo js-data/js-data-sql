@@ -9,13 +9,13 @@ describe('DSSqlAdapter#update + transaction', function () {
       var updatedUser = yield adapter.update(User, id, {name: 'Johnny'}, {transaction: trx});
       assert.equal(updatedUser.name, 'Johnny');
       assert.isDefined(updatedUser.id);
-      assert.equalObjects(updatedUser, {id: id, name: 'Johnny', age: null, profileId: null});
+      assert.equalObjects(updatedUser, {id: id, name: 'Johnny', age: null, profileId: null, addressId: null});
     }));
 
     var foundUser = yield adapter.find(User, id);
     assert.equal(foundUser.name, 'Johnny');
     assert.isDefined(foundUser.id);
-    assert.equalObjects(foundUser, {id: id, name: 'Johnny', age: null, profileId: null});
+    assert.equalObjects(foundUser, {id: id, name: 'Johnny', age: null, profileId: null, addressId: null});
   });
 
   it('rollback should not update a user in a Sql db', function* () {
@@ -29,7 +29,7 @@ describe('DSSqlAdapter#update + transaction', function () {
         var updatedUser = yield adapter.update(User, id, {name: 'Johnny'}, {transaction: trx});
         assert.equal(updatedUser.name, 'Johnny');
         assert.isDefined(updatedUser.id);
-        assert.equalObjects(updatedUser, {id: id, name: 'Johnny', age: null, profileId: null});
+        assert.equalObjects(updatedUser, {id: id, name: 'Johnny', age: null, profileId: null, addressId: null});
 
         throw new Error('rollback');
       }));
@@ -40,6 +40,6 @@ describe('DSSqlAdapter#update + transaction', function () {
     var foundUser = yield adapter.find(User, id);
     assert.equal(foundUser.name, 'John');
     assert.isDefined(foundUser.id);
-    assert.equalObjects(foundUser, {id: id, name: 'John', age: null, profileId: null});
+    assert.equalObjects(foundUser, {id: id, name: 'John', age: null, profileId: null, addressId: null});
   });
 });
