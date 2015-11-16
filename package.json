@@ -1,7 +1,7 @@
 {
   "name": "js-data-sql",
   "description": "Postgres/MySQL/MariaDB/SQLite3 adapter for js-data.",
-  "version": "0.11.5",
+  "version": "0.11.6",
   "homepage": "http://www.js-data.io/docs/dssqladapter",
   "repository": {
     "type": "git",
