@@ -18,6 +18,50 @@ function getTable (resourceConfig) {
   return resourceConfig.table || underscore(resourceConfig.name)
 }
 
+/**
+ * Lookup and apply table joins to query if field contains a `.`
+ * @param {string} field - Field defined in where filter
+ * @param {object} query - knex query to modify
+ * @param {object} resourceConfig - Resource of primary query/table
+ * @param {string[]} existingJoins - Array of fully qualitifed field names for
+ *   any existing table joins for query
+ * @returns {string} - field updated to perspective of applied joins
+ */
+function applyTableJoins (field, query, resourceConfig, existingJoins) {
+  if (DSUtils.contains(field, '.')) {
+    let parts = field.split('.')
+    let localResourceConfig = resourceConfig
+
+    let relationPath = []
+    while (parts.length >= 2) {
+      let relationName = parts.shift()
+      let relationResourceConfig = resourceConfig.getResource(relationName)
+      relationPath.push(relationName)
+
+      if (!existingJoins.some(t => t === relationPath.join('.'))) {
+        let [relation] = localResourceConfig.relationList.filter(r => r.relation === relationName)
+        if (relation) {
+          let table = getTable(localResourceConfig)
+          let localId = `${table}.${relation.localKey}`
+
+          let relationTable = getTable(relationResourceConfig)
+          let foreignId = `${relationTable}.${relationResourceConfig.idAttribute}`
+
+          query.join(relationTable, localId, foreignId)
+          existingJoins.push(relationPath.join('.'))
+        } else {
+          // hopefully a qualified local column
+        }
+      }
+      localResourceConfig = relationResourceConfig
+    }
+
+    field = `${getTable(localResourceConfig)}.${parts[0]}`
+  }
+
+  return field;
+}
+
 function loadWithRelations (items, resourceConfig, options) {
   let tasks = []
   let instance = Array.isArray(items) ? null : items
@@ -283,35 +327,12 @@ class DSSqlAdapter {
         }
 
         DSUtils.forOwn(criteria, (v, op) => {
-          if (DSUtils.contains(field, '.')) {
-            let parts = field.split('.')
-            let localResourceConfig = resourceConfig
-
-            let relationPath = []
-            while (parts.length >= 2) {
-              let relationName = parts.shift()
-              let relationResourceConfig = resourceConfig.getResource(relationName)
-              relationPath.push(relationName)
-
-              if (!joinedTables.some(t => t === relationPath.join('.'))) {
-                let [relation] = localResourceConfig.relationList.filter(r => r.relation === relationName)
-                if (relation) {
-                  let table = getTable(localResourceConfig)
-                  let localId = `${table}.${relation.localKey}`
-
-                  let relationTable = getTable(relationResourceConfig)
-                  let foreignId = `${relationTable}.${relationResourceConfig.idAttribute}`
-
-                  query = query.join(relationTable, localId, foreignId)
-                  joinedTables.push(relationPath.join('.'))
-                } else {
-                  // local column
-                }
-              }
-              localResourceConfig = relationResourceConfig
-            }
-
-            field = `${getTable(localResourceConfig)}.${parts[0]}`
+          // Apply table joins (if needed)
+          if (DSUtils.contains(field, ',')) {
+            let splitFields = field.split(',').map(c => c.trim())
+            field = splitFields.map(splitField => applyTableJoins(splitField, query, resourceConfig, joinedTables)).join(',');
+          } else {
+            field = applyTableJoins(field, query, resourceConfig, joinedTables);
           }
 
           if (op === '==' || op === '===') {
@@ -334,6 +355,45 @@ class DSSqlAdapter {
             query = query.where(field, 'in', v)
           } else if (op === 'notIn') {
             query = query.whereNotIn(field, v)
+          } else if (op === 'near') {
+            const milesRegex = /(\d+(\.\d+)?)\s*(m|M)iles$/;
+            const kilometersRegex = /(\d+(\.\d+)?)\s*(k|K)$/;
+
+            let radius;
+            let unitsPerDegree;
+            if (typeof v.radius === 'number' || milesRegex.test(v.radius)) {
+              radius = typeof v.radius === 'number' ? v.radius : v.radius.match(milesRegex)[1]
+              unitsPerDegree = 69.0; // miles per degree
+            } else if (kilometersRegex.test(v.radius)) {
+              radius = v.radius.match(kilometersRegex)[1]
+              unitsPerDegree = 111.045; // kilometers per degree;
+            } else {
+              throw new Error('Unknown radius distance units')
+            }
+
+            let [latitudeColumn, longitudeColumn] = field.split(',').map(c => c.trim())
+            let [latitude, longitude] = v.center;
+
+            // Uses indexes on `latitudeColumn` / `longitudeColumn` if available
+            query = query
+              .whereBetween(latitudeColumn, [
+                latitude - (radius / unitsPerDegree),
+                latitude + (radius / unitsPerDegree)
+              ])
+              .whereBetween(longitudeColumn, [
+                longitude - (radius / (unitsPerDegree * Math.cos(latitude * (Math.PI / 180)))),
+                longitude + (radius / (unitsPerDegree * Math.cos(latitude * (Math.PI / 180))))
+              ])
+
+            if (v.calculateDistance) {
+              let distanceColumn = (typeof v.calculateDistance === 'string') ? v.calculateDistance : 'distance'
+              query = query.select(knex.raw(`
+                ${unitsPerDegree} * DEGREES(ACOS(
+                  COS(RADIANS(?)) * COS(RADIANS(${latitudeColumn})) *
+                  COS(RADIANS(${longitudeColumn}) - RADIANS(?)) +
+                  SIN(RADIANS(?)) * SIN(RADIANS(${latitudeColumn}))
+                )) AS ${distanceColumn}`, [latitude, longitude, latitude]))
+            }
           } else if (op === 'like') {
             query = query.where(field, 'like', v)
           } else if (op === '|==' || op === '|===') {

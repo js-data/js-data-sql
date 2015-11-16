@@ -50,6 +50,7 @@ beforeEach(function () {
   globals.store = global.store = this.$$store;
   globals.User = global.User = this.$$User;
   globals.Profile = global.Profile = this.$$Profile;
+  globals.Address = global.Address = this.$$Address;
   globals.Post = global.Post = this.$$Post;
   globals.Comment = global.Comment = this.$$Comment;
 });
