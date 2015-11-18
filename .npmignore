@@ -30,3 +30,7 @@ node_modules
 .idea/
 *.iml
 coverage/
+src/
+test/
+mocha.start.js
+webpack.config.js

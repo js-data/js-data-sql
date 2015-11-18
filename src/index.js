@@ -1,6 +1,5 @@
 let knex = require('knex')
 let JSData = require('js-data')
-let map = require('mout/array/map')
 let underscore = require('mout/string/underscore')
 let unique = require('mout/array/unique')
 let toString = require('mout/lang/toString')
@@ -19,138 +18,48 @@ function getTable (resourceConfig) {
   return resourceConfig.table || underscore(resourceConfig.name)
 }
 
-function filterQuery (resourceConfig, params) {
-  let table = getTable(resourceConfig)
-  let query = this.query.select(`${table}.*`).from(table)
-  params = params || {}
-  params.where = params.where || {}
-  params.orderBy = params.orderBy || params.sort
-  params.skip = params.skip || params.offset
+/**
+ * Lookup and apply table joins to query if field contains a `.`
+ * @param {string} field - Field defined in where filter
+ * @param {object} query - knex query to modify
+ * @param {object} resourceConfig - Resource of primary query/table
+ * @param {string[]} existingJoins - Array of fully qualitifed field names for
+ *   any existing table joins for query
+ * @returns {string} - field updated to perspective of applied joins
+ */
+function applyTableJoins (field, query, resourceConfig, existingJoins) {
+  if (DSUtils.contains(field, '.')) {
+    let parts = field.split('.')
+    let localResourceConfig = resourceConfig
 
-  let joinedTables = []
+    let relationPath = []
+    while (parts.length >= 2) {
+      let relationName = parts.shift()
+      let relationResourceConfig = resourceConfig.getResource(relationName)
+      relationPath.push(relationName)
 
-  DSUtils.forEach(DSUtils.keys(params), k => {
-    let v = params[k]
-    if (!DSUtils.contains(reserved, k)) {
-      if (DSUtils.isObject(v)) {
-        params.where[k] = v
-      } else {
-        params.where[k] = {
-          '==': v
-        }
-      }
-      delete params[k]
-    }
-  })
+      if (!existingJoins.some(t => t === relationPath.join('.'))) {
+        let [relation] = localResourceConfig.relationList.filter(r => r.relation === relationName)
+        if (relation) {
+          let table = getTable(localResourceConfig)
+          let localId = `${table}.${relation.localKey}`
 
-  if (!DSUtils.isEmpty(params.where)) {
-    DSUtils.forOwn(params.where, (criteria, field) => {
-      if (!DSUtils.isObject(criteria)) {
-        params.where[field] = {
-          '==': criteria
-        }
-      }
+          let relationTable = getTable(relationResourceConfig)
+          let foreignId = `${relationTable}.${relationResourceConfig.idAttribute}`
 
-      DSUtils.forOwn(criteria, (v, op) => {
-        if (DSUtils.contains(field, '.')) {
-          let parts = field.split('.')
-          let localResourceConfig = resourceConfig
-
-          let relationPath = []
-          while (parts.length >= 2) {
-            let relationName = parts.shift()
-            let relationResourceConfig = resourceConfig.getResource(relationName)
-            relationPath.push(relationName)
-
-            if (!joinedTables.some(t => t === relationPath.join('.'))) {
-              let [relation] = localResourceConfig.relationList.filter(r => r.relation === relationName)
-              let table = getTable(localResourceConfig)
-              let localId = `${table}.${relation.localKey}`
-
-              let relationTable = getTable(relationResourceConfig)
-              let foreignId = `${relationTable}.${relationResourceConfig.idAttribute}`
-
-              query = query.join(relationTable, localId, foreignId)
-              joinedTables.push(relationPath.join('.'))
-            }
-            localResourceConfig = relationResourceConfig
-          }
-
-          field = `${getTable(localResourceConfig)}.${parts[0]}`
-        }
-
-        if (op === '==' || op === '===') {
-          query = query.where(field, v)
-        } else if (op === '!=' || op === '!==') {
-          query = query.where(field, '!=', v)
-        } else if (op === '>') {
-          query = query.where(field, '>', v)
-        } else if (op === '>=') {
-          query = query.where(field, '>=', v)
-        } else if (op === '<') {
-          query = query.where(field, '<', v)
-        } else if (op === '<=') {
-          query = query.where(field, '<=', v)
-        // } else if (op === 'isectEmpty') {
-        //  subQuery = subQuery ? subQuery.and(row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)
-        // } else if (op === 'isectNotEmpty') {
-        //  subQuery = subQuery ? subQuery.and(row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)
-        } else if (op === 'in') {
-          query = query.where(field, 'in', v)
-        } else if (op === 'notIn') {
-          query = query.whereNotIn(field, v)
-        } else if (op === 'like') {
-          query = query.where(field, 'like', v)
-        } else if (op === '|==' || op === '|===') {
-          query = query.orWhere(field, v)
-        } else if (op === '|!=' || op === '|!==') {
-          query = query.orWhere(field, '!=', v)
-        } else if (op === '|>') {
-          query = query.orWhere(field, '>', v)
-        } else if (op === '|>=') {
-          query = query.orWhere(field, '>=', v)
-        } else if (op === '|<') {
-          query = query.orWhere(field, '<', v)
-        } else if (op === '|<=') {
-          query = query.orWhere(field, '<=', v)
-        // } else if (op === '|isectEmpty') {
-        //  subQuery = subQuery ? subQuery.or(row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)
-        // } else if (op === '|isectNotEmpty') {
-        //  subQuery = subQuery ? subQuery.or(row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)
-        } else if (op === '|in') {
-          query = query.orWhere(field, 'in', v)
-        } else if (op === '|notIn') {
-          query = query.orWhereNotIn(field, v)
+          query.join(relationTable, localId, foreignId)
+          existingJoins.push(relationPath.join('.'))
         } else {
-          throw new Error('Operator not found')
+          // hopefully a qualified local column
         }
-      })
-    })
-  }
-
-  if (params.orderBy) {
-    if (DSUtils.isString(params.orderBy)) {
-      params.orderBy = [
-        [params.orderBy, 'asc']
-      ]
-    }
-    for (var i = 0; i < params.orderBy.length; i++) {
-      if (DSUtils.isString(params.orderBy[i])) {
-        params.orderBy[i] = [params.orderBy[i], 'asc']
       }
-      query = DSUtils.upperCase(params.orderBy[i][1]) === 'DESC' ? query.orderBy(params.orderBy[i][0], 'desc') : query.orderBy(params.orderBy[i][0], 'asc')
+      localResourceConfig = relationResourceConfig
     }
+
+    field = `${getTable(localResourceConfig)}.${parts[0]}`
   }
 
-  if (params.skip) {
-    query = query.offset(+params.offset)
-  }
-
-  if (params.limit) {
-    query = query.limit(+params.limit)
-  }
-
-  return query
+  return field;
 }
 
 function loadWithRelations (items, resourceConfig, options) {
@@ -187,7 +96,7 @@ function loadWithRelations (items, resourceConfig, options) {
       if (instance) {
         foreignKeyFilter = { '==': instance[resourceConfig.idAttribute] }
       } else {
-        foreignKeyFilter = { 'in': map(items, item => item[resourceConfig.idAttribute]) }
+        foreignKeyFilter = { 'in': items.map(function (item) { return item[resourceConfig.idAttribute] }) }
       }
       task = this.findAll(resourceConfig.getResource(relationName), {
         where: {
@@ -258,7 +167,7 @@ function loadWithRelations (items, resourceConfig, options) {
         task = this.findAll(resourceConfig.getResource(relationName), {
           where: {
             [relationDef.idAttribute]: {
-              'in': DSUtils.filter(map(items, item => DSUtils.get(item, def.localKey)), x => x)
+              'in': DSUtils.filter(items.map(function (item) { return DSUtils.get(item, def.localKey) }), x => x)
             }
           }
         }, __options).then(relatedItems => {
@@ -297,7 +206,8 @@ class DSSqlAdapter {
     let instance
     options = options || {}
     options.with = options.with || []
-    return this.query
+    let query = options && options.transaction || this.query
+    return query
       .select('*')
       .from(getTable(resourceConfig))
       .where(resourceConfig.idAttribute, toString(id))
@@ -316,7 +226,7 @@ class DSSqlAdapter {
     let items = null
     options = options || {}
     options.with = options.with || []
-    return filterQuery.call(this, resourceConfig, params, options).then(_items => {
+    return this.filterQuery(resourceConfig, params, options).then(_items => {
       items = _items
       return loadWithRelations.call(this, _items, resourceConfig, options)
     }).then(() => items)
@@ -324,7 +234,8 @@ class DSSqlAdapter {
 
   create (resourceConfig, attrs, options) {
     attrs = DSUtils.removeCircular(DSUtils.omit(attrs, resourceConfig.relationFields || []))
-    return this.query(getTable(resourceConfig))
+    let query = options && options.transaction || this.query
+    return query(getTable(resourceConfig))
       .insert(attrs, resourceConfig.idAttribute)
       .then(ids => {
         if (attrs[resourceConfig.idAttribute]) {
@@ -339,7 +250,8 @@ class DSSqlAdapter {
 
   update (resourceConfig, id, attrs, options) {
     attrs = DSUtils.removeCircular(DSUtils.omit(attrs, resourceConfig.relationFields || []))
-    return this.query(getTable(resourceConfig))
+    let query = options && options.transaction || this.query
+    return query(getTable(resourceConfig))
       .where(resourceConfig.idAttribute, toString(id))
       .update(attrs)
       .then(() => this.find(resourceConfig, id, options))
@@ -347,27 +259,193 @@ class DSSqlAdapter {
 
   updateAll (resourceConfig, attrs, params, options) {
     attrs = DSUtils.removeCircular(DSUtils.omit(attrs, resourceConfig.relationFields || []))
-    return filterQuery.call(this, resourceConfig, params, options).then(items => {
-      return map(items, item => item[resourceConfig.idAttribute])
+    return this.filterQuery(resourceConfig, params, options).then(items => {
+      return items.map(function (item) { return item[resourceConfig.idAttribute] })
     }).then(ids => {
-      return filterQuery.call(this, resourceConfig, params, options).update(attrs).then(() => {
+      return this.filterQuery(resourceConfig, params, options).update(attrs).then(() => {
         let _params = {where: {}}
         _params.where[resourceConfig.idAttribute] = {
           'in': ids
         }
-        return filterQuery.call(this, resourceConfig, _params, options)
+        return this.filterQuery(resourceConfig, _params, options)
       })
     })
   }
 
-  destroy (resourceConfig, id) {
-    return this.query(getTable(resourceConfig))
+  destroy (resourceConfig, id, options) {
+    let query = options && options.transaction || this.query
+    return query(getTable(resourceConfig))
       .where(resourceConfig.idAttribute, toString(id))
       .del().then(() => undefined)
   }
 
   destroyAll (resourceConfig, params, options) {
-    return filterQuery.call(this, resourceConfig, params, options).del().then(() => undefined)
+    return this.filterQuery(resourceConfig, params, options).del().then(() => undefined)
+  }
+
+  filterQuery (resourceConfig, params, options) {
+    let table = getTable(resourceConfig)
+    let query
+
+    if (params instanceof Object.getPrototypeOf(this.query.client).QueryBuilder) {
+      query = params
+      params = {}
+    } else if (options && options.query) {
+      query = options.query || this.query
+    } else {
+      query = options && options.transaction || this.query
+      query = query.select(`${table}.*`).from(table)
+    }
+
+    params = params || {}
+    params.where = params.where || {}
+    params.orderBy = params.orderBy || params.sort
+    params.skip = params.skip || params.offset
+
+    let joinedTables = []
+
+    DSUtils.forEach(DSUtils.keys(params), k => {
+      let v = params[k]
+      if (!DSUtils.contains(reserved, k)) {
+        if (DSUtils.isObject(v)) {
+          params.where[k] = v
+        } else {
+          params.where[k] = {
+            '==': v
+          }
+        }
+        delete params[k]
+      }
+    })
+
+    if (!DSUtils.isEmpty(params.where)) {
+      DSUtils.forOwn(params.where, (criteria, field) => {
+        if (!DSUtils.isObject(criteria)) {
+          params.where[field] = {
+            '==': criteria
+          }
+        }
+
+        DSUtils.forOwn(criteria, (v, op) => {
+          // Apply table joins (if needed)
+          if (DSUtils.contains(field, ',')) {
+            let splitFields = field.split(',').map(c => c.trim())
+            field = splitFields.map(splitField => applyTableJoins(splitField, query, resourceConfig, joinedTables)).join(',');
+          } else {
+            field = applyTableJoins(field, query, resourceConfig, joinedTables);
+          }
+
+          if (op === '==' || op === '===') {
+            query = query.where(field, v)
+          } else if (op === '!=' || op === '!==') {
+            query = query.where(field, '!=', v)
+          } else if (op === '>') {
+            query = query.where(field, '>', v)
+          } else if (op === '>=') {
+            query = query.where(field, '>=', v)
+          } else if (op === '<') {
+            query = query.where(field, '<', v)
+          } else if (op === '<=') {
+            query = query.where(field, '<=', v)
+          // } else if (op === 'isectEmpty') {
+          //  subQuery = subQuery ? subQuery.and(row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)
+          // } else if (op === 'isectNotEmpty') {
+          //  subQuery = subQuery ? subQuery.and(row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)
+          } else if (op === 'in') {
+            query = query.where(field, 'in', v)
+          } else if (op === 'notIn') {
+            query = query.whereNotIn(field, v)
+          } else if (op === 'near') {
+            const milesRegex = /(\d+(\.\d+)?)\s*(m|M)iles$/;
+            const kilometersRegex = /(\d+(\.\d+)?)\s*(k|K)$/;
+
+            let radius;
+            let unitsPerDegree;
+            if (typeof v.radius === 'number' || milesRegex.test(v.radius)) {
+              radius = typeof v.radius === 'number' ? v.radius : v.radius.match(milesRegex)[1]
+              unitsPerDegree = 69.0; // miles per degree
+            } else if (kilometersRegex.test(v.radius)) {
+              radius = v.radius.match(kilometersRegex)[1]
+              unitsPerDegree = 111.045; // kilometers per degree;
+            } else {
+              throw new Error('Unknown radius distance units')
+            }
+
+            let [latitudeColumn, longitudeColumn] = field.split(',').map(c => c.trim())
+            let [latitude, longitude] = v.center;
+
+            // Uses indexes on `latitudeColumn` / `longitudeColumn` if available
+            query = query
+              .whereBetween(latitudeColumn, [
+                latitude - (radius / unitsPerDegree),
+                latitude + (radius / unitsPerDegree)
+              ])
+              .whereBetween(longitudeColumn, [
+                longitude - (radius / (unitsPerDegree * Math.cos(latitude * (Math.PI / 180)))),
+                longitude + (radius / (unitsPerDegree * Math.cos(latitude * (Math.PI / 180))))
+              ])
+
+            if (v.calculateDistance) {
+              let distanceColumn = (typeof v.calculateDistance === 'string') ? v.calculateDistance : 'distance'
+              query = query.select(knex.raw(`
+                ${unitsPerDegree} * DEGREES(ACOS(
+                  COS(RADIANS(?)) * COS(RADIANS(${latitudeColumn})) *
+                  COS(RADIANS(${longitudeColumn}) - RADIANS(?)) +
+                  SIN(RADIANS(?)) * SIN(RADIANS(${latitudeColumn}))
+                )) AS ${distanceColumn}`, [latitude, longitude, latitude]))
+            }
+          } else if (op === 'like') {
+            query = query.where(field, 'like', v)
+          } else if (op === '|==' || op === '|===') {
+            query = query.orWhere(field, v)
+          } else if (op === '|!=' || op === '|!==') {
+            query = query.orWhere(field, '!=', v)
+          } else if (op === '|>') {
+            query = query.orWhere(field, '>', v)
+          } else if (op === '|>=') {
+            query = query.orWhere(field, '>=', v)
+          } else if (op === '|<') {
+            query = query.orWhere(field, '<', v)
+          } else if (op === '|<=') {
+            query = query.orWhere(field, '<=', v)
+          // } else if (op === '|isectEmpty') {
+          //  subQuery = subQuery ? subQuery.or(row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)
+          // } else if (op === '|isectNotEmpty') {
+          //  subQuery = subQuery ? subQuery.or(row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)
+          } else if (op === '|in') {
+            query = query.orWhere(field, 'in', v)
+          } else if (op === '|notIn') {
+            query = query.orWhereNotIn(field, v)
+          } else {
+            throw new Error('Operator not found')
+          }
+        })
+      })
+    }
+
+    if (params.orderBy) {
+      if (DSUtils.isString(params.orderBy)) {
+        params.orderBy = [
+          [params.orderBy, 'asc']
+        ]
+      }
+      for (var i = 0; i < params.orderBy.length; i++) {
+        if (DSUtils.isString(params.orderBy[i])) {
+          params.orderBy[i] = [params.orderBy[i], 'asc']
+        }
+        query = DSUtils.upperCase(params.orderBy[i][1]) === 'DESC' ? query.orderBy(params.orderBy[i][0], 'desc') : query.orderBy(params.orderBy[i][0], 'asc')
+      }
+    }
+
+    if (params.skip) {
+      query = query.offset(+params.offset)
+    }
+
+    if (params.limit) {
+      query = query.limit(+params.limit)
+    }
+
+    return query
   }
 }
 
