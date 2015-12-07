@@ -336,9 +336,17 @@ class DSSqlAdapter {
           }
 
           if (op === '==' || op === '===') {
-            query = query.where(field, v)
+            if (v === null) {
+              query = query.whereNull(field)
+            } else {
+              query = query.where(field, v)
+            }
           } else if (op === '!=' || op === '!==') {
-            query = query.where(field, '!=', v)
+            if (v === null) {
+              query = query.whereNotNull(field)
+            } else {
+              query = query.where(field, '!=', v)
+            }
           } else if (op === '>') {
             query = query.where(field, '>', v)
           } else if (op === '>=') {
@@ -397,9 +405,17 @@ class DSSqlAdapter {
           } else if (op === 'like') {
             query = query.where(field, 'like', v)
           } else if (op === '|==' || op === '|===') {
-            query = query.orWhere(field, v)
+            if (v === null) {
+              query = query.orWhereNull(field)
+            } else {
+              query = query.orWhere(field, v)
+            }
           } else if (op === '|!=' || op === '|!==') {
-            query = query.orWhere(field, '!=', v)
+            if (v === null) {
+              query = query.orWhereNotNull(field)
+            } else {
+              query = query.orWhere(field, '!=', v)
+            }
           } else if (op === '|>') {
             query = query.orWhere(field, '>', v)
           } else if (op === '|>=') {

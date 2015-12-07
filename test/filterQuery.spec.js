@@ -34,4 +34,28 @@ describe('DSSqlAdapter#filterQuery', function () {
     var filterQuery = adapter.filterQuery(User, { orderBy: 'name' }, { query });
     assert.equal(filterQuery.toString(), 'select * from `test` order by `name` asc')
   });
+
+  it('should convert == null to IS NULL', function* () {
+    var query = adapter.query.from('test');
+    var filterQuery = adapter.filterQuery(User, { name: { '==' : null } }, { query });
+    assert.equal(filterQuery.toString(), 'select * from `test` where `name` is null')
+  });
+
+  it('should convert != null to IS NOT NULL', function* () {
+    var query = adapter.query.from('test');
+    var filterQuery = adapter.filterQuery(User, { name: { '!=' : null } }, { query });
+    assert.equal(filterQuery.toString(), 'select * from `test` where `name` is not null')
+  });
+
+  it('should convert |== null to OR field IS NULL', function* () {
+    var query = adapter.query.from('test');
+    var filterQuery = adapter.filterQuery(User, { name: 'Sean', age: { '|==' : null } }, { query });
+    assert.equal(filterQuery.toString(), 'select * from `test` where `name` = \'Sean\' or `age` is null')
+  });
+
+  it('should convert |!= null to OR field IS NOT NULL', function* () {
+    var query = adapter.query.from('test');
+    var filterQuery = adapter.filterQuery(User, { name: 'Sean', age: { '|!=' : null } }, { query });
+    assert.equal(filterQuery.toString(), 'select * from `test` where `name` = \'Sean\' or `age` is not null')
+  });
 });
