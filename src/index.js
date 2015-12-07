@@ -59,7 +59,7 @@ function applyTableJoins (field, query, resourceConfig, existingJoins) {
     field = `${getTable(localResourceConfig)}.${parts[0]}`
   }
 
-  return field;
+  return field
 }
 
 function loadWithRelations (items, resourceConfig, options) {
@@ -330,9 +330,9 @@ class DSSqlAdapter {
           // Apply table joins (if needed)
           if (DSUtils.contains(field, ',')) {
             let splitFields = field.split(',').map(c => c.trim())
-            field = splitFields.map(splitField => applyTableJoins(splitField, query, resourceConfig, joinedTables)).join(',');
+            field = splitFields.map(splitField => applyTableJoins(splitField, query, resourceConfig, joinedTables)).join(',')
           } else {
-            field = applyTableJoins(field, query, resourceConfig, joinedTables);
+            field = applyTableJoins(field, query, resourceConfig, joinedTables)
           }
 
           if (op === '==' || op === '===') {
@@ -364,23 +364,23 @@ class DSSqlAdapter {
           } else if (op === 'notIn') {
             query = query.whereNotIn(field, v)
           } else if (op === 'near') {
-            const milesRegex = /(\d+(\.\d+)?)\s*(m|M)iles$/;
-            const kilometersRegex = /(\d+(\.\d+)?)\s*(k|K)$/;
+            const milesRegex = /(\d+(\.\d+)?)\s*(m|M)iles$/
+            const kilometersRegex = /(\d+(\.\d+)?)\s*(k|K)$/
 
-            let radius;
-            let unitsPerDegree;
+            let radius
+            let unitsPerDegree
             if (typeof v.radius === 'number' || milesRegex.test(v.radius)) {
               radius = typeof v.radius === 'number' ? v.radius : v.radius.match(milesRegex)[1]
-              unitsPerDegree = 69.0; // miles per degree
+              unitsPerDegree = 69.0 // miles per degree
             } else if (kilometersRegex.test(v.radius)) {
               radius = v.radius.match(kilometersRegex)[1]
-              unitsPerDegree = 111.045; // kilometers per degree;
+              unitsPerDegree = 111.045 // kilometers per degree;
             } else {
               throw new Error('Unknown radius distance units')
             }
 
             let [latitudeColumn, longitudeColumn] = field.split(',').map(c => c.trim())
-            let [latitude, longitude] = v.center;
+            let [latitude, longitude] = v.center
 
             // Uses indexes on `latitudeColumn` / `longitudeColumn` if available
             query = query
