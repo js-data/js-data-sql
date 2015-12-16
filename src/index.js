@@ -404,6 +404,8 @@ class DSSqlAdapter {
             }
           } else if (op === 'like') {
             query = query.where(field, 'like', v)
+          } else if (op === '|like') {
+            query = query.orWhere(field, 'like', v)
           } else if (op === '|==' || op === '|===') {
             if (v === null) {
               query = query.orWhereNull(field)

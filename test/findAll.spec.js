@@ -21,6 +21,31 @@ describe('DSSqlAdapter#findAll', function () {
     assert.equal(users[0].profileId, profile1.id);
   });
 
+  it('should filter using the "like" operator', function* () {
+    let user1 = yield adapter.create(User, {name: 'Sean'});
+    let post1 = yield adapter.create(Post, {userId: user1.id, content: 'foo'});
+    let post2 = yield adapter.create(Post, {userId: user1.id, content: 'bar'});
+    let post3 = yield adapter.create(Post, {userId: user1.id, content: 'baz'});
+
+    let posts = yield adapter.findAll(Post, {where: {'content': {'like': 'ba%'}}});
+    assert.equal(posts.length, 2);
+    assert.equal(posts[0].content, 'bar');
+    assert.equal(posts[1].content, 'baz');
+  });
+
+  it('should filter using the "or like" operator', function* () {
+    let user1 = yield adapter.create(User, {name: 'Sean'});
+    let post1 = yield adapter.create(Post, {userId: user1.id, content: 'foo'});
+    let post2 = yield adapter.create(Post, {userId: user1.id, content: 'bar'});
+    let post3 = yield adapter.create(Post, {userId: user1.id, content: 'baz'});
+
+    let posts = yield adapter.findAll(Post, {where: {'content': {'like': 'ba%', '|like': 'f%'}}});
+    assert.equal(posts.length, 3);
+    assert.equal(posts[0].content, 'foo');
+    assert.equal(posts[1].content, 'bar');
+    assert.equal(posts[2].content, 'baz');
+  });
+
   describe('near', function () {
     beforeEach(function * () {
       this.googleAddress    = yield adapter.create(Address, { name : 'Google',    latitude: 37.4219999, longitude: -122.0862515 });
