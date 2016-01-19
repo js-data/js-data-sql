@@ -159,27 +159,33 @@ function loadWithRelations (items, resourceConfig, options) {
       })
     } else if (def.type === 'belongsTo' || (def.type === 'hasOne' && def.localKey)) {
       if (instance) {
-        task = this.find(resourceConfig.getResource(relationName), DSUtils.get(instance, def.localKey), __options).then(relatedItem => {
-          instance[def.localField] = relatedItem
-          return relatedItem
-        })
-      } else {
-        task = this.findAll(resourceConfig.getResource(relationName), {
-          where: {
-            [relationDef.idAttribute]: {
-              'in': DSUtils.filter(items.map(function (item) { return DSUtils.get(item, def.localKey) }), x => x)
-            }
-          }
-        }, __options).then(relatedItems => {
-          DSUtils.forEach(items, item => {
-            DSUtils.forEach(relatedItems, relatedItem => {
-              if (relatedItem[relationDef.idAttribute] === item[def.localKey]) {
-                item[def.localField] = relatedItem
-              }
-            })
+        let id = DSUtils.get(instance, def.localKey)
+        if (id) {
+          task = this.find(resourceConfig.getResource(relationName), DSUtils.get(instance, def.localKey), __options).then(relatedItem => {
+            instance[def.localField] = relatedItem
+            return relatedItem
           })
-          return relatedItems
-        })
+        }
+      } else {
+        let ids = DSUtils.filter(items.map(function (item) { return DSUtils.get(item, def.localKey) }), x => x)
+        if (ids.length) {
+          task = this.findAll(resourceConfig.getResource(relationName), {
+            where: {
+              [relationDef.idAttribute]: {
+                'in': ids
+              }
+            }
+          }, __options).then(relatedItems => {
+            DSUtils.forEach(items, item => {
+              DSUtils.forEach(relatedItems, relatedItem => {
+                if (relatedItem[relationDef.idAttribute] === item[def.localKey]) {
+                  item[def.localField] = relatedItem
+                }
+              })
+            })
+            return relatedItems
+          })
+        }
       }
     }
 
