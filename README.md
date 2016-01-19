@@ -73,7 +73,11 @@ the first place
 1. `cd js-data-sql; npm install;`
 1. Write your code, including relevant documentation and tests
 1. Run `npm test` (build and test)
-  - You need io.js or Node 4.x that includes generator support without a flag
+  - You need Node 4.x that includes generator support without a flag
+  - The tests expect a database to be running follows, but can be overridden by passing the applicable environment variable as indicated (ex. `DB_HOST=192.168.99.100 npm test`).
+    - `DB_HOST`: `localhost`
+    - `DB_NAME`: `circle_test`
+    - `DB_USER`: `ubuntu`
 1. Your code will be linted and checked for formatting, the tests will be run
 1. The `dist/` folder & files will be generated, do NOT commit `dist/*`! They
 will be committed when a release is cut.
