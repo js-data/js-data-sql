@@ -232,29 +232,35 @@ module.exports =
 	      })();
 	    } else if (def.type === 'belongsTo' || def.type === 'hasOne' && def.localKey) {
 	      if (instance) {
-	        task = _this.find(resourceConfig.getResource(relationName), DSUtils.get(instance, def.localKey), __options).then(function (relatedItem) {
-	          instance[def.localField] = relatedItem;
-	          return relatedItem;
-	        });
-	      } else {
-	        task = _this.findAll(resourceConfig.getResource(relationName), {
-	          where: _defineProperty({}, relationDef.idAttribute, {
-	            'in': DSUtils.filter(items.map(function (item) {
-	              return DSUtils.get(item, def.localKey);
-	            }), function (x) {
-	              return x;
-	            })
-	          })
-	        }, __options).then(function (relatedItems) {
-	          DSUtils.forEach(items, function (item) {
-	            DSUtils.forEach(relatedItems, function (relatedItem) {
-	              if (relatedItem[relationDef.idAttribute] === item[def.localKey]) {
-	                item[def.localField] = relatedItem;
-	              }
-	            });
+	        var id = DSUtils.get(instance, def.localKey);
+	        if (id) {
+	          task = _this.find(resourceConfig.getResource(relationName), DSUtils.get(instance, def.localKey), __options).then(function (relatedItem) {
+	            instance[def.localField] = relatedItem;
+	            return relatedItem;
 	          });
-	          return relatedItems;
+	        }
+	      } else {
+	        var ids = DSUtils.filter(items.map(function (item) {
+	          return DSUtils.get(item, def.localKey);
+	        }), function (x) {
+	          return x;
 	        });
+	        if (ids.length) {
+	          task = _this.findAll(resourceConfig.getResource(relationName), {
+	            where: _defineProperty({}, relationDef.idAttribute, {
+	              'in': ids
+	            })
+	          }, __options).then(function (relatedItems) {
+	            DSUtils.forEach(items, function (item) {
+	              DSUtils.forEach(relatedItems, function (relatedItem) {
+	                if (relatedItem[relationDef.idAttribute] === item[def.localKey]) {
+	                  item[def.localField] = relatedItem;
+	                }
+	              });
+	            });
+	            return relatedItems;
+	          });
+	        }
 	      }
 	    }
 
@@ -503,6 +509,8 @@ module.exports =
 	                }
 	              } else if (op === 'like') {
 	                query = query.where(field, 'like', v);
+	              } else if (op === '|like') {
+	                query = query.orWhere(field, 'like', v);
 	              } else if (op === '|==' || op === '|===') {
 	                if (v === null) {
 	                  query = query.orWhereNull(field);
