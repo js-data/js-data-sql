@@ -18,50 +18,6 @@ function getTable (resourceConfig) {
   return resourceConfig.table || underscore(resourceConfig.name)
 }
 
-/**
- * Lookup and apply table joins to query if field contains a `.`
- * @param {string} field - Field defined in where filter
- * @param {object} query - knex query to modify
- * @param {object} resourceConfig - Resource of primary query/table
- * @param {string[]} existingJoins - Array of fully qualitifed field names for
- *   any existing table joins for query
- * @returns {string} - field updated to perspective of applied joins
- */
-function applyTableJoins (field, query, resourceConfig, existingJoins) {
-  if (DSUtils.contains(field, '.')) {
-    let parts = field.split('.')
-    let localResourceConfig = resourceConfig
-
-    let relationPath = []
-    while (parts.length >= 2) {
-      let relationName = parts.shift()
-      let relationResourceConfig = resourceConfig.getResource(relationName)
-      relationPath.push(relationName)
-
-      if (!existingJoins.some(t => t === relationPath.join('.'))) {
-        let [relation] = localResourceConfig.relationList.filter(r => r.relation === relationName)
-        if (relation) {
-          let table = getTable(localResourceConfig)
-          let localId = `${table}.${relation.localKey}`
-
-          let relationTable = getTable(relationResourceConfig)
-          let foreignId = `${relationTable}.${relationResourceConfig.idAttribute}`
-
-          query.join(relationTable, localId, foreignId)
-          existingJoins.push(relationPath.join('.'))
-        } else {
-          // hopefully a qualified local column
-        }
-      }
-      localResourceConfig = relationResourceConfig
-    }
-
-    field = `${getTable(localResourceConfig)}.${parts[0]}`
-  }
-
-  return field
-}
-
 function loadWithRelations (items, resourceConfig, options) {
   let tasks = []
   let instance = Array.isArray(items) ? null : items
@@ -291,6 +247,7 @@ class DSSqlAdapter {
 
   filterQuery (resourceConfig, params, options) {
     let table = getTable(resourceConfig)
+    let joinedTables = []
     let query
 
     if (params instanceof Object.getPrototypeOf(this.query.client).QueryBuilder) {
@@ -307,8 +264,6 @@ class DSSqlAdapter {
     params.where = params.where || {}
     params.orderBy = params.orderBy || params.sort
     params.skip = params.skip || params.offset
-
-    let joinedTables = []
 
     DSUtils.forEach(DSUtils.keys(params), k => {
       let v = params[k]
@@ -331,16 +286,68 @@ class DSSqlAdapter {
             '==': criteria
           }
         }
+        
+        let processRelationField = (field) => {
+          let parts = field.split('.')
+          let localResourceConfig = resourceConfig
+          let relationPath = []
+          
+          while (parts.length >= 2) {
+            let relationName = parts.shift()
+            let relationResourceConfig = resourceConfig.getResource(relationName)
+            relationPath.push(relationName)
 
-        DSUtils.forOwn(criteria, (v, op) => {
-          // Apply table joins (if needed)
+            if (localResourceConfig.relationList) {
+              let [relation] = localResourceConfig.relationList.filter(r => r.relation === relationName)
+              if (relation) {
+                if (relation.type === 'belongsTo' || relation.type === 'hasOne') {
+                  // Apply table join for belongsTo/hasOne property (if not done already)
+                  if (!joinedTables.some(t => t === relationPath.join('.'))) {
+                    let table = getTable(localResourceConfig)
+                    let localId = `${table}.${relation.localKey}`
+
+                    let relationTable = getTable(relationResourceConfig)
+                    let foreignId = `${relationTable}.${relationResourceConfig.idAttribute}`
+
+                    query.join(relationTable, localId, foreignId)
+                    joinedTables.push(relationPath.join('.'))
+                  }
+                } else if (relation.type === 'hasMany') {
+                  // Perform `WHERE EXISTS` subquery for hasMany property
+                  let table = getTable(localResourceConfig)
+                  let localId = `${table}.${localResourceConfig.idAttribute}`
+
+                  let relationTable = getTable(relationResourceConfig)
+                  let foreignId = `${relationTable}.${relation.foreignKey}`
+
+                  let existsParams = {
+                    [foreignId]: {'===': knex.raw(localId)},
+                    [parts[0]]: criteria
+                  };
+                  query.whereExists(this.filterQuery(relationResourceConfig, existsParams, options));
+                  criteria = null; // criteria handled by EXISTS subquery
+                }
+              } else {
+                // hopefully a qualified local column
+              }
+              
+              localResourceConfig = relationResourceConfig
+            } 
+          }
+          
+          return `${getTable(localResourceConfig)}.${parts[0]}`
+        }
+        
+        if (DSUtils.contains(field, '.')) {
           if (DSUtils.contains(field, ',')) {
             let splitFields = field.split(',').map(c => c.trim())
-            field = splitFields.map(splitField => applyTableJoins(splitField, query, resourceConfig, joinedTables)).join(',')
+            field = splitFields.map(splitField => processRelationField(splitField)).join(',')
           } else {
-            field = applyTableJoins(field, query, resourceConfig, joinedTables)
+            field = processRelationField(field, query, resourceConfig, joinedTables)
           }
-
+        }
+        
+        DSUtils.forOwn(criteria, (v, op) => {
           if (op === '==' || op === '===') {
             if (v === null) {
               query = query.whereNull(field)
