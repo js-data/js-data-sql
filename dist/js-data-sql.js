@@ -47,9 +47,9 @@ module.exports =
 
 	'use strict';
 
-	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
 	var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; })();
+
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -66,66 +66,6 @@ module.exports =
 
 	function getTable(resourceConfig) {
 	  return resourceConfig.table || underscore(resourceConfig.name);
-	}
-
-	/**
-	 * Lookup and apply table joins to query if field contains a `.`
-	 * @param {string} field - Field defined in where filter
-	 * @param {object} query - knex query to modify
-	 * @param {object} resourceConfig - Resource of primary query/table
-	 * @param {string[]} existingJoins - Array of fully qualitifed field names for
-	 *   any existing table joins for query
-	 * @returns {string} - field updated to perspective of applied joins
-	 */
-	function applyTableJoins(field, query, resourceConfig, existingJoins) {
-	  if (DSUtils.contains(field, '.')) {
-	    (function () {
-	      var parts = field.split('.');
-	      var localResourceConfig = resourceConfig;
-
-	      var relationPath = [];
-
-	      var _loop = function _loop() {
-	        var relationName = parts.shift();
-	        var relationResourceConfig = resourceConfig.getResource(relationName);
-	        relationPath.push(relationName);
-
-	        if (!existingJoins.some(function (t) {
-	          return t === relationPath.join('.');
-	        })) {
-	          var _localResourceConfig$ = localResourceConfig.relationList.filter(function (r) {
-	            return r.relation === relationName;
-	          });
-
-	          var _localResourceConfig$2 = _slicedToArray(_localResourceConfig$, 1);
-
-	          var relation = _localResourceConfig$2[0];
-
-	          if (relation) {
-	            var table = getTable(localResourceConfig);
-	            var localId = table + '.' + relation.localKey;
-
-	            var relationTable = getTable(relationResourceConfig);
-	            var foreignId = relationTable + '.' + relationResourceConfig.idAttribute;
-
-	            query.join(relationTable, localId, foreignId);
-	            existingJoins.push(relationPath.join('.'));
-	          } else {
-	            // hopefully a qualified local column
-	          }
-	        }
-	        localResourceConfig = relationResourceConfig;
-	      };
-
-	      while (parts.length >= 2) {
-	        _loop();
-	      }
-
-	      field = getTable(localResourceConfig) + '.' + parts[0];
-	    })();
-	  }
-
-	  return field;
 	}
 
 	function loadWithRelations(items, resourceConfig, options) {
@@ -198,12 +138,12 @@ module.exports =
 
 	        if (instance) {
 	          var itemKeys = instance[def.localKeys] || [];
-	          itemKeys = Array.isArray(itemKeys) ? itemKeys : DSUtils.keys(itemKeys);
+	          itemKeys = Array.isArray(itemKeys) ? itemKeys : Object.keys(itemKeys);
 	          localKeys = localKeys.concat(itemKeys || []);
 	        } else {
 	          DSUtils.forEach(items, function (item) {
 	            var itemKeys = item[def.localKeys] || [];
-	            itemKeys = Array.isArray(itemKeys) ? itemKeys : DSUtils.keys(itemKeys);
+	            itemKeys = Array.isArray(itemKeys) ? itemKeys : Object.keys(itemKeys);
 	            localKeys = localKeys.concat(itemKeys || []);
 	          });
 	        }
@@ -232,29 +172,35 @@ module.exports =
 	      })();
 	    } else if (def.type === 'belongsTo' || def.type === 'hasOne' && def.localKey) {
 	      if (instance) {
-	        task = _this.find(resourceConfig.getResource(relationName), DSUtils.get(instance, def.localKey), __options).then(function (relatedItem) {
-	          instance[def.localField] = relatedItem;
-	          return relatedItem;
-	        });
-	      } else {
-	        task = _this.findAll(resourceConfig.getResource(relationName), {
-	          where: _defineProperty({}, relationDef.idAttribute, {
-	            'in': DSUtils.filter(items.map(function (item) {
-	              return DSUtils.get(item, def.localKey);
-	            }), function (x) {
-	              return x;
-	            })
-	          })
-	        }, __options).then(function (relatedItems) {
-	          DSUtils.forEach(items, function (item) {
-	            DSUtils.forEach(relatedItems, function (relatedItem) {
-	              if (relatedItem[relationDef.idAttribute] === item[def.localKey]) {
-	                item[def.localField] = relatedItem;
-	              }
-	            });
+	        var id = DSUtils.get(instance, def.localKey);
+	        if (id) {
+	          task = _this.find(resourceConfig.getResource(relationName), DSUtils.get(instance, def.localKey), __options).then(function (relatedItem) {
+	            instance[def.localField] = relatedItem;
+	            return relatedItem;
 	          });
-	          return relatedItems;
+	        }
+	      } else {
+	        var ids = DSUtils.filter(items.map(function (item) {
+	          return DSUtils.get(item, def.localKey);
+	        }), function (x) {
+	          return x;
 	        });
+	        if (ids.length) {
+	          task = _this.findAll(resourceConfig.getResource(relationName), {
+	            where: _defineProperty({}, relationDef.idAttribute, {
+	              'in': ids
+	            })
+	          }, __options).then(function (relatedItems) {
+	            DSUtils.forEach(items, function (item) {
+	              DSUtils.forEach(relatedItems, function (relatedItem) {
+	                if (relatedItem[relationDef.idAttribute] === item[def.localKey]) {
+	                  item[def.localField] = relatedItem;
+	                }
+	              });
+	            });
+	            return relatedItems;
+	          });
+	        }
 	      }
 	    }
 
@@ -290,7 +236,7 @@ module.exports =
 	      var query = options && options.transaction || this.query;
 	      return query.select('*').from(getTable(resourceConfig)).where(resourceConfig.idAttribute, toString(id)).then(function (rows) {
 	        if (!rows.length) {
-	          return DSUtils.Promise.reject(new Error('Not Found!'));
+	          return Promise.reject(new Error('Not Found!'));
 	        } else {
 	          instance = rows[0];
 	          return loadWithRelations.call(_this2, instance, resourceConfig, options);
@@ -380,7 +326,10 @@ module.exports =
 	  }, {
 	    key: 'filterQuery',
 	    value: function filterQuery(resourceConfig, params, options) {
+	      var _this7 = this;
+
 	      var table = getTable(resourceConfig);
+	      var joinedTables = [];
 	      var query = undefined;
 
 	      if (params instanceof Object.getPrototypeOf(this.query.client).QueryBuilder) {
@@ -398,9 +347,7 @@ module.exports =
 	      params.orderBy = params.orderBy || params.sort;
 	      params.skip = params.skip || params.offset;
 
-	      var joinedTables = [];
-
-	      DSUtils.forEach(DSUtils.keys(params), function (k) {
+	      DSUtils.forEach(Object.keys(params), function (k) {
 	        var v = params[k];
 	        if (!DSUtils.contains(reserved, k)) {
 	          if (DSUtils.isObject(v)) {
@@ -422,19 +369,82 @@ module.exports =
 	            };
 	          }
 
-	          DSUtils.forOwn(criteria, function (v, op) {
-	            // Apply table joins (if needed)
+	          var processRelationField = function processRelationField(field) {
+	            var parts = field.split('.');
+	            var localResourceConfig = resourceConfig;
+	            var relationPath = [];
+
+	            var _loop = function _loop() {
+	              var relationName = parts.shift();
+
+	              var _localResourceConfig$ = localResourceConfig.relationList.filter(function (r) {
+	                return r.relation === relationName || r.localField === relationName;
+	              });
+
+	              var _localResourceConfig$2 = _slicedToArray(_localResourceConfig$, 1);
+
+	              var relation = _localResourceConfig$2[0];
+
+	              if (relation) {
+	                var relationResourceConfig = resourceConfig.getResource(relation.relation);
+	                relationPath.push(relation.relation);
+
+	                if (relation.type === 'belongsTo' || relation.type === 'hasOne') {
+	                  // Apply table join for belongsTo/hasOne property (if not done already)
+	                  if (!joinedTables.some(function (t) {
+	                    return t === relationPath.join('.');
+	                  })) {
+	                    var _table = getTable(localResourceConfig);
+	                    var localId = _table + '.' + relation.localKey;
+
+	                    var relationTable = getTable(relationResourceConfig);
+	                    var foreignId = relationTable + '.' + relationResourceConfig.idAttribute;
+
+	                    query.join(relationTable, localId, foreignId);
+	                    joinedTables.push(relationPath.join('.'));
+	                  }
+	                } else if (relation.type === 'hasMany') {
+	                  var _existsParams;
+
+	                  // Perform `WHERE EXISTS` subquery for hasMany property
+	                  var _table2 = getTable(localResourceConfig);
+	                  var localId = _table2 + '.' + localResourceConfig.idAttribute;
+
+	                  var relationTable = getTable(relationResourceConfig);
+	                  var foreignId = relationTable + '.' + relation.foreignKey;
+
+	                  var existsParams = (_existsParams = {}, _defineProperty(_existsParams, foreignId, { '===': knex.raw(localId) }), _defineProperty(_existsParams, parts[0], criteria), _existsParams);
+	                  query.whereExists(_this7.filterQuery(relationResourceConfig, existsParams, options));
+	                  criteria = null; // criteria handled by EXISTS subquery
+	                }
+
+	                localResourceConfig = relationResourceConfig;
+	              } else {
+	                // hopefully a qualified local column
+	              }
+	            };
+
+	            while (parts.length >= 2) {
+	              _loop();
+	            }
+
+	            return getTable(localResourceConfig) + '.' + parts[0];
+	          };
+
+	          if (DSUtils.contains(field, '.')) {
 	            if (DSUtils.contains(field, ',')) {
 	              var splitFields = field.split(',').map(function (c) {
 	                return c.trim();
 	              });
 	              field = splitFields.map(function (splitField) {
-	                return applyTableJoins(splitField, query, resourceConfig, joinedTables);
+	                return processRelationField(splitField);
 	              }).join(',');
 	            } else {
-	              field = applyTableJoins(field, query, resourceConfig, joinedTables);
+	              field = processRelationField(field, query, resourceConfig, joinedTables);
 	            }
+	          }
 
+	          DSUtils.forOwn(criteria, function (v, op) {
 	            if (op === '==' || op === '===') {
 	              if (v === null) {
 	                query = query.whereNull(field);
@@ -503,6 +513,8 @@ module.exports =
 	                }
 	              } else if (op === 'like') {
 	                query = query.where(field, 'like', v);
+	              } else if (op === '|like') {
+	                query = query.orWhere(field, 'like', v);
 	              } else if (op === '|==' || op === '|===') {
 	                if (v === null) {
 	                  query = query.orWhereNull(field);

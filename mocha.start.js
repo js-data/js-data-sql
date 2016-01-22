@@ -34,7 +34,8 @@ var config = {
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || process.env.C9_USER || 'ubuntu',
     database: process.env.DB_NAME || (process.env.C9_USER ? 'c9' : 'circle_test')
-  }
+  },
+  debug: process.env.DEBUG || false
 };
 
 TestRunner.init({
