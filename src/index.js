@@ -84,12 +84,12 @@ function loadWithRelations (items, resourceConfig, options) {
 
       if (instance) {
         let itemKeys = instance[def.localKeys] || []
-        itemKeys = Array.isArray(itemKeys) ? itemKeys : DSUtils.keys(itemKeys)
+        itemKeys = Array.isArray(itemKeys) ? itemKeys : Object.keys(itemKeys)
         localKeys = localKeys.concat(itemKeys || [])
       } else {
         DSUtils.forEach(items, item => {
           let itemKeys = item[def.localKeys] || []
-          itemKeys = Array.isArray(itemKeys) ? itemKeys : DSUtils.keys(itemKeys)
+          itemKeys = Array.isArray(itemKeys) ? itemKeys : Object.keys(itemKeys)
           localKeys = localKeys.concat(itemKeys || [])
         })
       }
@@ -175,7 +175,7 @@ class DSSqlAdapter {
       .where(resourceConfig.idAttribute, toString(id))
       .then(rows => {
         if (!rows.length) {
-          return DSUtils.Promise.reject(new Error('Not Found!'))
+          return Promise.reject(new Error('Not Found!'))
         } else {
           instance = rows[0]
           return loadWithRelations.call(this, instance, resourceConfig, options)
@@ -265,7 +265,7 @@ class DSSqlAdapter {
     params.orderBy = params.orderBy || params.sort
     params.skip = params.skip || params.offset
 
-    DSUtils.forEach(DSUtils.keys(params), k => {
+    DSUtils.forEach(Object.keys(params), k => {
       let v = params[k]
       if (!DSUtils.contains(reserved, k)) {
         if (DSUtils.isObject(v)) {
