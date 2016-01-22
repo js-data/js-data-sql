@@ -96,7 +96,7 @@ function loadWithRelations (items, resourceConfig, options) {
       if (instance) {
         foreignKeyFilter = { '==': instance[resourceConfig.idAttribute] }
       } else {
-        foreignKeyFilter = { 'in': items.map(function (item) { return item[resourceConfig.idAttribute] }) }
+        foreignKeyFilter = { 'in': items.map(item => item[resourceConfig.idAttribute]) }
       }
       task = this.findAll(resourceConfig.getResource(relationName), {
         where: {
@@ -167,7 +167,7 @@ function loadWithRelations (items, resourceConfig, options) {
           })
         }
       } else {
-        let ids = DSUtils.filter(items.map(function (item) { return DSUtils.get(item, def.localKey) }), x => x)
+        let ids = DSUtils.filter(items.map(item => DSUtils.get(item, def.localKey)), x => x)
         if (ids.length) {
           task = this.findAll(resourceConfig.getResource(relationName), {
             where: {
@@ -266,7 +266,7 @@ class DSSqlAdapter {
   updateAll (resourceConfig, attrs, params, options) {
     attrs = DSUtils.removeCircular(DSUtils.omit(attrs, resourceConfig.relationFields || []))
     return this.filterQuery(resourceConfig, params, options).then(items => {
-      return items.map(function (item) { return item[resourceConfig.idAttribute] })
+      return items.map(item => item[resourceConfig.idAttribute])
     }).then(ids => {
       return this.filterQuery(resourceConfig, params, options).update(attrs).then(() => {
         let _params = {where: {}}
