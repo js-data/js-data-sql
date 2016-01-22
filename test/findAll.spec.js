@@ -46,7 +46,7 @@ describe('DSSqlAdapter#findAll', function () {
     assert.equal(posts[2].content, 'baz');
   });
   
-  it('should filter using a hasMany relation', function* () {
+  it("should filter using a hasMany relation's name", function* () {
     let user1 = yield adapter.create(User, {name: 'Sean'});
     let post1 = yield adapter.create(Post, {userId: user1.id, content: 'foo'});
     let post2 = yield adapter.create(Post, {userId: user1.id, content: 'bar'});
@@ -61,6 +61,26 @@ describe('DSSqlAdapter#findAll', function () {
     let post7 = yield adapter.create(Post, {userId: user3.id, content: 'baz'});
 
     let users = yield adapter.findAll(User, {where: {'post.content': {'==': 'foo'} }});
+    assert.equal(users.length, 2);
+    assert.equal(users[0].name, 'Sean');
+    assert.equal(users[1].name, 'Jason');
+  });
+  
+  it("should filter using a hasMany relation's localField", function* () {
+    let user1 = yield adapter.create(User, {name: 'Sean'});
+    let post1 = yield adapter.create(Post, {userId: user1.id, content: 'foo'});
+    let post2 = yield adapter.create(Post, {userId: user1.id, content: 'bar'});
+    let post3 = yield adapter.create(Post, {userId: user1.id, content: 'baz'});
+    
+    let user2 = yield adapter.create(User, {name: 'Jason'});
+    let post4 = yield adapter.create(Post, {userId: user2.id, content: 'foo'});
+    let post5 = yield adapter.create(Post, {userId: user2.id, content: 'bar'});
+    
+    let user3 = yield adapter.create(User, {name: 'Ed'});
+    let post6 = yield adapter.create(Post, {userId: user3.id, content: 'bar'});
+    let post7 = yield adapter.create(Post, {userId: user3.id, content: 'baz'});
+
+    let users = yield adapter.findAll(User, {where: {'posts.content': {'==': 'foo'} }});
     assert.equal(users.length, 2);
     assert.equal(users[0].name, 'Sean');
     assert.equal(users[1].name, 'Jason');

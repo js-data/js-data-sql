@@ -294,45 +294,44 @@ class DSSqlAdapter {
           
           while (parts.length >= 2) {
             let relationName = parts.shift()
-            let relationResourceConfig = resourceConfig.getResource(relationName)
-            relationPath.push(relationName)
+            let [relation] = localResourceConfig.relationList.filter(r => r.relation === relationName || r.localField === relationName)
 
-            if (localResourceConfig.relationList) {
-              let [relation] = localResourceConfig.relationList.filter(r => r.relation === relationName)
-              if (relation) {
-                if (relation.type === 'belongsTo' || relation.type === 'hasOne') {
-                  // Apply table join for belongsTo/hasOne property (if not done already)
-                  if (!joinedTables.some(t => t === relationPath.join('.'))) {
-                    let table = getTable(localResourceConfig)
-                    let localId = `${table}.${relation.localKey}`
-
-                    let relationTable = getTable(relationResourceConfig)
-                    let foreignId = `${relationTable}.${relationResourceConfig.idAttribute}`
-
-                    query.join(relationTable, localId, foreignId)
-                    joinedTables.push(relationPath.join('.'))
-                  }
-                } else if (relation.type === 'hasMany') {
-                  // Perform `WHERE EXISTS` subquery for hasMany property
+            if (relation) {
+              let relationResourceConfig = resourceConfig.getResource(relation.relation)
+              relationPath.push(relation.relation)
+              
+              if (relation.type === 'belongsTo' || relation.type === 'hasOne') {
+                // Apply table join for belongsTo/hasOne property (if not done already)
+                if (!joinedTables.some(t => t === relationPath.join('.'))) {
                   let table = getTable(localResourceConfig)
-                  let localId = `${table}.${localResourceConfig.idAttribute}`
+                  let localId = `${table}.${relation.localKey}`
 
                   let relationTable = getTable(relationResourceConfig)
-                  let foreignId = `${relationTable}.${relation.foreignKey}`
+                  let foreignId = `${relationTable}.${relationResourceConfig.idAttribute}`
 
-                  let existsParams = {
-                    [foreignId]: {'===': knex.raw(localId)},
-                    [parts[0]]: criteria
-                  };
-                  query.whereExists(this.filterQuery(relationResourceConfig, existsParams, options));
-                  criteria = null; // criteria handled by EXISTS subquery
+                  query.join(relationTable, localId, foreignId)
+                  joinedTables.push(relationPath.join('.'))
                 }
-              } else {
-                // hopefully a qualified local column
+              } else if (relation.type === 'hasMany') {
+                // Perform `WHERE EXISTS` subquery for hasMany property
+                let table = getTable(localResourceConfig)
+                let localId = `${table}.${localResourceConfig.idAttribute}`
+
+                let relationTable = getTable(relationResourceConfig)
+                let foreignId = `${relationTable}.${relation.foreignKey}`
+
+                let existsParams = {
+                  [foreignId]: {'===': knex.raw(localId)},
+                  [parts[0]]: criteria
+                };
+                query.whereExists(this.filterQuery(relationResourceConfig, existsParams, options));
+                criteria = null; // criteria handled by EXISTS subquery
               }
               
               localResourceConfig = relationResourceConfig
-            } 
+            } else {
+              // hopefully a qualified local column
+            }
           }
           
           return `${getTable(localResourceConfig)}.${parts[0]}`
