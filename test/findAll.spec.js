@@ -60,10 +60,10 @@ describe('DSSqlAdapter#findAll', function () {
     let post6 = yield adapter.create(Post, {userId: user3.id, content: 'bar'});
     let post7 = yield adapter.create(Post, {userId: user3.id, content: 'baz'});
 
-    let users = yield adapter.findAll(User, {where: {'post.content': {'==': 'foo'} }});
+    let users = yield adapter.findAll(User, {where: {'post.content': {'==': 'foo'} }, orderBy: 'name'});
     assert.equal(users.length, 2);
-    assert.equal(users[0].name, 'Sean');
-    assert.equal(users[1].name, 'Jason');
+    assert.equal(users[0].name, 'Jason');
+    assert.equal(users[1].name, 'Sean');
   });
   
   it("should filter using a hasMany relation's localField", function* () {
@@ -80,10 +80,10 @@ describe('DSSqlAdapter#findAll', function () {
     let post6 = yield adapter.create(Post, {userId: user3.id, content: 'bar'});
     let post7 = yield adapter.create(Post, {userId: user3.id, content: 'baz'});
 
-    let users = yield adapter.findAll(User, {where: {'posts.content': {'==': 'foo'} }});
+    let users = yield adapter.findAll(User, {where: {'posts.content': {'==': 'foo'} }, orderBy: 'name'});
     assert.equal(users.length, 2);
-    assert.equal(users[0].name, 'Sean');
-    assert.equal(users[1].name, 'Jason');
+    assert.equal(users[0].name, 'Jason');
+    assert.equal(users[1].name, 'Sean');
   });
 
   describe('near', function () {

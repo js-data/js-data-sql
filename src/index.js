@@ -314,17 +314,17 @@ class DSSqlAdapter {
                 }
               } else if (relation.type === 'hasMany') {
                 // Perform `WHERE EXISTS` subquery for hasMany property
-                let table = getTable(localResourceConfig)
-                let localId = `${table}.${localResourceConfig.idAttribute}`
-
-                let relationTable = getTable(relationResourceConfig)
-                let foreignId = `${relationTable}.${relation.foreignKey}`
-
                 let existsParams = {
-                  [foreignId]: {'===': knex.raw(localId)},
                   [parts[0]]: criteria
                 };
-                query.whereExists(this.filterQuery(relationResourceConfig, existsParams, options));
+                let subQuery = this.filterQuery(relationResourceConfig, existsParams, options)
+                  .whereRaw('??.??=??.??', [
+                    getTable(relationResourceConfig),
+                    relation.foreignKey,
+                    getTable(localResourceConfig),
+                    localResourceConfig.idAttribute
+                  ])
+                query.whereExists(subQuery);
                 criteria = null; // criteria handled by EXISTS subquery
               }
               

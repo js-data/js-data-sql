@@ -4,7 +4,8 @@ machine:
 
 database:
   override:
-    - mysql -u ubuntu circle_test < test/setup.sql
+    - DB_CLIENT=mysql npm run migrate-db
+    - DB_CLIENT=pg npm run migrate-db
 test:
   override:
     - npm run ci
