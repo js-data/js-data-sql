@@ -1,9 +1,11 @@
-let knex = require('knex')
-let JSData = require('js-data')
-let underscore = require('mout/string/underscore')
-let unique = require('mout/array/unique')
-let toString = require('mout/lang/toString')
-let { DSUtils } = JSData
+import knex from 'knex';
+import Promise from 'bluebird';
+import { contains, unique } from 'mout/array'
+import { isEmpty, isObject, isString, toString } from 'mout/lang';
+import { deepMixIn, forOwn, get, omit } from 'mout/object'
+import { underscore } from 'mout/string';
+import { DSUtils } from 'js-data';
+const { removeCircular } = DSUtils;
 
 let reserved = [
   'orderBy',
@@ -22,146 +24,150 @@ function loadWithRelations (items, resourceConfig, options) {
   let tasks = []
   let instance = Array.isArray(items) ? null : items
 
-  DSUtils.forEach(resourceConfig.relationList, def => {
-    let relationName = def.relation
-    let relationDef = resourceConfig.getResource(relationName)
+  if (resourceConfig.relationList) {
+    resourceConfig.relationList.forEach(def => {
+      let relationName = def.relation
+      let relationDef = resourceConfig.getResource(relationName)
 
-    let containedName = null
-    if (DSUtils.contains(options.with, relationName)) {
-      containedName = relationName
-    } else if (DSUtils.contains(options.with, def.localField)) {
-      containedName = def.localField
-    } else {
-      return
-    }
-
-    let __options = DSUtils.deepMixIn({}, options.orig ? options.orig() : options)
-
-    // Filter to only properties under current relation
-    __options.with = options.with.filter(relation => {
-      return relation !== containedName &&
-      relation.indexOf(containedName) === 0 &&
-      relation.length >= containedName.length &&
-      relation[containedName.length] === '.'
-    }).map(relation => relation.substr(containedName.length + 1))
-
-    let task
-
-    if ((def.type === 'hasOne' || def.type === 'hasMany') && def.foreignKey) {
-      let foreignKeyFilter
-      if (instance) {
-        foreignKeyFilter = { '==': instance[resourceConfig.idAttribute] }
+      let containedName = null
+      if (contains(options.with, relationName)) {
+        containedName = relationName
+      } else if (contains(options.with, def.localField)) {
+        containedName = def.localField
       } else {
-        foreignKeyFilter = { 'in': items.map(item => item[resourceConfig.idAttribute]) }
+        return
       }
-      task = this.findAll(resourceConfig.getResource(relationName), {
-        where: {
-          [def.foreignKey]: foreignKeyFilter
-        }
-      }, __options).then(relatedItems => {
-        if (instance) {
-          if (def.type === 'hasOne' && relatedItems.length) {
-            instance[def.localField] = relatedItems[0]
-          } else {
-            instance[def.localField] = relatedItems
+
+      let __options = deepMixIn({}, options.orig ? options.orig() : options)
+
+      // Filter to only properties under current relation
+      __options.with = options.with.filter(relation => {
+        return relation !== containedName &&
+        relation.indexOf(containedName) === 0 &&
+        relation.length >= containedName.length &&
+        relation[containedName.length] === '.'
+      }).map(relation => relation.substr(containedName.length + 1))
+
+      let task
+
+      if ((def.type === 'hasOne' || def.type === 'hasMany') && def.foreignKey) {
+        task = this.findAll(resourceConfig.getResource(relationName), {
+          where: {
+            [def.foreignKey]: instance ? 
+              { '==': instance[resourceConfig.idAttribute] } :
+              { 'in': items.map(item => item[resourceConfig.idAttribute]) }
           }
-        } else {
-          DSUtils.forEach(items, item => {
-            let attached = relatedItems.filter(ri => ri[def.foreignKey] === item[resourceConfig.idAttribute])
-            if (def.type === 'hasOne' && attached.length) {
-              item[def.localField] = attached[0]
+        }, __options).then(relatedItems => {
+          if (instance) {
+            if (def.type === 'hasOne' && relatedItems.length) {
+              instance[def.localField] = relatedItems[0]
             } else {
-              item[def.localField] = attached
+              instance[def.localField] = relatedItems
             }
-          })
-        }
+          } else {
+            items.forEach(item => {
+              let attached = relatedItems.filter(ri => ri[def.foreignKey] === item[resourceConfig.idAttribute])
+              if (def.type === 'hasOne' && attached.length) {
+                item[def.localField] = attached[0]
+              } else {
+                item[def.localField] = attached
+              }
+            })
+          }
 
-        return relatedItems
-      })
-    } else if (def.type === 'hasMany' && def.localKeys) {
-      // TODO: Write test for with: hasMany property with localKeys
-      let localKeys = []
+          return relatedItems
+        })
+      } else if (def.type === 'hasMany' && def.localKeys) {
+        // TODO: Write test for with: hasMany property with localKeys
+        let localKeys = []
 
-      if (instance) {
-        let itemKeys = instance[def.localKeys] || []
-        itemKeys = Array.isArray(itemKeys) ? itemKeys : Object.keys(itemKeys)
-        localKeys = localKeys.concat(itemKeys || [])
-      } else {
-        DSUtils.forEach(items, item => {
-          let itemKeys = item[def.localKeys] || []
+        if (instance) {
+          let itemKeys = instance[def.localKeys] || []
           itemKeys = Array.isArray(itemKeys) ? itemKeys : Object.keys(itemKeys)
           localKeys = localKeys.concat(itemKeys || [])
-        })
-      }
+        } else {
+          items.forEach(item => {
+            let itemKeys = item[def.localKeys] || []
+            itemKeys = Array.isArray(itemKeys) ? itemKeys : Object.keys(itemKeys)
+            localKeys = localKeys.concat(itemKeys || [])
+          })
+        }
 
-      task = this.findAll(resourceConfig.getResource(relationName), {
-        where: {
-          [relationDef.idAttribute]: {
-            'in': DSUtils.filter(unique(localKeys), x => x)
+        task = this.findAll(resourceConfig.getResource(relationName), {
+          where: {
+            [relationDef.idAttribute]: {
+              'in': filter(unique(localKeys), x => x)
+            }
+          }
+        }, __options).then(relatedItems => {
+          if (instance) {
+            instance[def.localField] = relatedItems
+          } else {
+            items.forEach(item => {
+              let itemKeys = item[def.localKeys] || []
+              let attached = relatedItems.filter(ri => itemKeys && contains(itemKeys, ri[relationDef.idAttribute]))
+              item[def.localField] = attached
+            })
+          }
+
+          return relatedItems
+        })
+      } else if (def.type === 'belongsTo' || (def.type === 'hasOne' && def.localKey)) {
+        if (instance) {
+          let id = get(instance, def.localKey)
+          if (id) {
+            task = this.find(resourceConfig.getResource(relationName), get(instance, def.localKey), __options).then(relatedItem => {
+              instance[def.localField] = relatedItem
+              return relatedItem
+            })
+          }
+        } else {
+          let ids = items.map(item => get(item, def.localKey)).filter(x => x)
+          if (ids.length) {
+            task = this.findAll(resourceConfig.getResource(relationName), {
+              where: {
+                [relationDef.idAttribute]: {
+                  'in': ids
+                }
+              }
+            }, __options).then(relatedItems => {
+              items.forEach(item => {
+                relatedItems.forEach(relatedItem => {
+                  if (relatedItem[relationDef.idAttribute] === item[def.localKey]) {
+                    item[def.localField] = relatedItem
+                  }
+                })
+              })
+              return relatedItems
+            })
           }
         }
-      }, __options).then(relatedItems => {
-        if (instance) {
-          instance[def.localField] = relatedItems
-        } else {
-          DSUtils.forEach(items, item => {
-            let itemKeys = item[def.localKeys] || []
-            let attached = relatedItems.filter(ri => itemKeys && DSUtils.contains(itemKeys, ri[relationDef.idAttribute]))
-            item[def.localField] = attached
-          })
-        }
-
-        return relatedItems
-      })
-    } else if (def.type === 'belongsTo' || (def.type === 'hasOne' && def.localKey)) {
-      if (instance) {
-        let id = DSUtils.get(instance, def.localKey)
-        if (id) {
-          task = this.find(resourceConfig.getResource(relationName), DSUtils.get(instance, def.localKey), __options).then(relatedItem => {
-            instance[def.localField] = relatedItem
-            return relatedItem
-          })
-        }
-      } else {
-        let ids = DSUtils.filter(items.map(item => DSUtils.get(item, def.localKey)), x => x)
-        if (ids.length) {
-          task = this.findAll(resourceConfig.getResource(relationName), {
-            where: {
-              [relationDef.idAttribute]: {
-                'in': ids
-              }
-            }
-          }, __options).then(relatedItems => {
-            DSUtils.forEach(items, item => {
-              DSUtils.forEach(relatedItems, relatedItem => {
-                if (relatedItem[relationDef.idAttribute] === item[def.localKey]) {
-                  item[def.localField] = relatedItem
-                }
-              })
-            })
-            return relatedItems
-          })
-        }
       }
-    }
 
-    if (task) {
-      tasks.push(task)
-    }
-  })
-  return DSUtils.Promise.all(tasks)
+      if (task) {
+        tasks.push(task)
+      }
+    })
+  }
+  return Promise.all(tasks)
 }
 
 class DSSqlAdapter {
   constructor (options) {
     this.defaults = {}
     options = options || {}
+    
+    if (options.queryOperators) {
+      this.queryOperators = options.queryOperators;
+      delete options.queryOperators;
+    }
+    
     if (options.__knex__) {
       this.query = options
     } else {
       this.query = knex(options)
     }
-    DSUtils.deepMixIn(this.defaults, options)
+    deepMixIn(this.defaults, options)
   }
 
   find (resourceConfig, id, options) {
@@ -195,7 +201,7 @@ class DSSqlAdapter {
   }
 
   create (resourceConfig, attrs, options) {
-    attrs = DSUtils.removeCircular(DSUtils.omit(attrs, resourceConfig.relationFields || []))
+    attrs = removeCircular(omit(attrs, resourceConfig.relationFields || []))
     let query = options && options.transaction || this.query
     return query(getTable(resourceConfig))
       .insert(attrs, resourceConfig.idAttribute)
@@ -211,7 +217,7 @@ class DSSqlAdapter {
   }
 
   update (resourceConfig, id, attrs, options) {
-    attrs = DSUtils.removeCircular(DSUtils.omit(attrs, resourceConfig.relationFields || []))
+    attrs = removeCircular(omit(attrs, resourceConfig.relationFields || []))
     let query = options && options.transaction || this.query
     return query(getTable(resourceConfig))
       .where(resourceConfig.idAttribute, toString(id))
@@ -220,7 +226,7 @@ class DSSqlAdapter {
   }
 
   updateAll (resourceConfig, attrs, params, options) {
-    attrs = DSUtils.removeCircular(DSUtils.omit(attrs, resourceConfig.relationFields || []))
+    attrs = removeCircular(omit(attrs, resourceConfig.relationFields || []))
     return this.filterQuery(resourceConfig, params, options).then(items => {
       return items.map(item => item[resourceConfig.idAttribute])
     }).then(ids => {
@@ -265,10 +271,10 @@ class DSSqlAdapter {
     params.orderBy = params.orderBy || params.sort
     params.skip = params.skip || params.offset
 
-    DSUtils.forEach(Object.keys(params), k => {
+    Object.keys(params).forEach(k => {
       let v = params[k]
-      if (!DSUtils.contains(reserved, k)) {
-        if (DSUtils.isObject(v)) {
+      if (!contains(reserved, k)) {
+        if (isObject(v)) {
           params.where[k] = v
         } else {
           params.where[k] = {
@@ -279,9 +285,9 @@ class DSSqlAdapter {
       }
     })
 
-    if (!DSUtils.isEmpty(params.where)) {
-      DSUtils.forOwn(params.where, (criteria, field) => {
-        if (!DSUtils.isObject(criteria)) {
+    if (!isEmpty(params.where)) {
+      forOwn(params.where, (criteria, field) => {
+        if (!isObject(criteria)) {
           params.where[field] = {
             '==': criteria
           }
@@ -314,17 +320,17 @@ class DSSqlAdapter {
                 }
               } else if (relation.type === 'hasMany') {
                 // Perform `WHERE EXISTS` subquery for hasMany property
-                let table = getTable(localResourceConfig)
-                let localId = `${table}.${localResourceConfig.idAttribute}`
-
-                let relationTable = getTable(relationResourceConfig)
-                let foreignId = `${relationTable}.${relation.foreignKey}`
-
                 let existsParams = {
-                  [foreignId]: {'===': knex.raw(localId)},
                   [parts[0]]: criteria
                 };
-                query.whereExists(this.filterQuery(relationResourceConfig, existsParams, options));
+                let subQuery = this.filterQuery(relationResourceConfig, existsParams, options)
+                  .whereRaw('??.??=??.??', [
+                    getTable(relationResourceConfig),
+                    relation.foreignKey,
+                    getTable(localResourceConfig),
+                    localResourceConfig.idAttribute
+                  ])
+                query.whereExists(subQuery);
                 criteria = null; // criteria handled by EXISTS subquery
               }
               
@@ -337,8 +343,8 @@ class DSSqlAdapter {
           return `${getTable(localResourceConfig)}.${parts[0]}`
         }
         
-        if (DSUtils.contains(field, '.')) {
-          if (DSUtils.contains(field, ',')) {
+        if (contains(field, '.')) {
+          if (contains(field, ',')) {
             let splitFields = field.split(',').map(c => c.trim())
             field = splitFields.map(splitField => processRelationField(splitField)).join(',')
           } else {
@@ -346,124 +352,130 @@ class DSSqlAdapter {
           }
         }
         
-        DSUtils.forOwn(criteria, (v, op) => {
-          if (op === '==' || op === '===') {
-            if (v === null) {
-              query = query.whereNull(field)
-            } else {
-              query = query.where(field, v)
-            }
-          } else if (op === '!=' || op === '!==') {
-            if (v === null) {
-              query = query.whereNotNull(field)
-            } else {
-              query = query.where(field, '!=', v)
-            }
-          } else if (op === '>') {
-            query = query.where(field, '>', v)
-          } else if (op === '>=') {
-            query = query.where(field, '>=', v)
-          } else if (op === '<') {
-            query = query.where(field, '<', v)
-          } else if (op === '<=') {
-            query = query.where(field, '<=', v)
-          // } else if (op === 'isectEmpty') {
-          //  subQuery = subQuery ? subQuery.and(row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)
-          // } else if (op === 'isectNotEmpty') {
-          //  subQuery = subQuery ? subQuery.and(row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)
-          } else if (op === 'in') {
-            query = query.where(field, 'in', v)
-          } else if (op === 'notIn') {
-            query = query.whereNotIn(field, v)
-          } else if (op === 'near') {
-            const milesRegex = /(\d+(\.\d+)?)\s*(m|M)iles$/
-            const kilometersRegex = /(\d+(\.\d+)?)\s*(k|K)$/
-
-            let radius
-            let unitsPerDegree
-            if (typeof v.radius === 'number' || milesRegex.test(v.radius)) {
-              radius = typeof v.radius === 'number' ? v.radius : v.radius.match(milesRegex)[1]
-              unitsPerDegree = 69.0 // miles per degree
-            } else if (kilometersRegex.test(v.radius)) {
-              radius = v.radius.match(kilometersRegex)[1]
-              unitsPerDegree = 111.045 // kilometers per degree;
-            } else {
-              throw new Error('Unknown radius distance units')
-            }
-
-            let [latitudeColumn, longitudeColumn] = field.split(',').map(c => c.trim())
-            let [latitude, longitude] = v.center
-
-            // Uses indexes on `latitudeColumn` / `longitudeColumn` if available
-            query = query
-              .whereBetween(latitudeColumn, [
-                latitude - (radius / unitsPerDegree),
-                latitude + (radius / unitsPerDegree)
-              ])
-              .whereBetween(longitudeColumn, [
-                longitude - (radius / (unitsPerDegree * Math.cos(latitude * (Math.PI / 180)))),
-                longitude + (radius / (unitsPerDegree * Math.cos(latitude * (Math.PI / 180))))
-              ])
-
-            if (v.calculateDistance) {
-              let distanceColumn = (typeof v.calculateDistance === 'string') ? v.calculateDistance : 'distance'
-              query = query.select(knex.raw(`
-                ${unitsPerDegree} * DEGREES(ACOS(
-                  COS(RADIANS(?)) * COS(RADIANS(${latitudeColumn})) *
-                  COS(RADIANS(${longitudeColumn}) - RADIANS(?)) +
-                  SIN(RADIANS(?)) * SIN(RADIANS(${latitudeColumn}))
-                )) AS ${distanceColumn}`, [latitude, longitude, latitude]))
-            }
-          } else if (op === 'like') {
-            query = query.where(field, 'like', v)
-          } else if (op === '|like') {
-            query = query.orWhere(field, 'like', v)
-          } else if (op === '|==' || op === '|===') {
-            if (v === null) {
-              query = query.orWhereNull(field)
-            } else {
-              query = query.orWhere(field, v)
-            }
-          } else if (op === '|!=' || op === '|!==') {
-            if (v === null) {
-              query = query.orWhereNotNull(field)
-            } else {
-              query = query.orWhere(field, '!=', v)
-            }
-          } else if (op === '|>') {
-            query = query.orWhere(field, '>', v)
-          } else if (op === '|>=') {
-            query = query.orWhere(field, '>=', v)
-          } else if (op === '|<') {
-            query = query.orWhere(field, '<', v)
-          } else if (op === '|<=') {
-            query = query.orWhere(field, '<=', v)
-          // } else if (op === '|isectEmpty') {
-          //  subQuery = subQuery ? subQuery.or(row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)
-          // } else if (op === '|isectNotEmpty') {
-          //  subQuery = subQuery ? subQuery.or(row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)
-          } else if (op === '|in') {
-            query = query.orWhere(field, 'in', v)
-          } else if (op === '|notIn') {
-            query = query.orWhereNotIn(field, v)
+        forOwn(criteria, (v, op) => {
+          if (op in (this.queryOperators || {})) {
+            // Custom or overridden operator
+            query = this.queryOperators[op](query, field, v)
           } else {
-            throw new Error('Operator not found')
+            // Builtin operators
+            if (op === '==' || op === '===') {
+              if (v === null) {
+                query = query.whereNull(field)
+              } else {
+                query.where(field, v)
+              }
+            } else if (op === '!=' || op === '!==') {
+              if (v === null) {
+                query = query.whereNotNull(field)
+              } else {
+                query = query.where(field, '!=', v)
+              }
+            } else if (op === '>') {
+              query = query.where(field, '>', v)
+            } else if (op === '>=') {
+              query = query.where(field, '>=', v)
+            } else if (op === '<') {
+              query = query.where(field, '<', v)
+            } else if (op === '<=') {
+              query = query.where(field, '<=', v)
+            // } else if (op === 'isectEmpty') {
+            //  subQuery = subQuery ? subQuery.and(row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)
+            // } else if (op === 'isectNotEmpty') {
+            //  subQuery = subQuery ? subQuery.and(row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)
+            } else if (op === 'in') {
+              query = query.where(field, 'in', v)
+            } else if (op === 'notIn') {
+              query = query.whereNotIn(field, v)
+            } else if (op === 'near') {
+              const milesRegex = /(\d+(\.\d+)?)\s*(m|M)iles$/
+              const kilometersRegex = /(\d+(\.\d+)?)\s*(k|K)$/
+
+              let radius
+              let unitsPerDegree
+              if (typeof v.radius === 'number' || milesRegex.test(v.radius)) {
+                radius = typeof v.radius === 'number' ? v.radius : v.radius.match(milesRegex)[1]
+                unitsPerDegree = 69.0 // miles per degree
+              } else if (kilometersRegex.test(v.radius)) {
+                radius = v.radius.match(kilometersRegex)[1]
+                unitsPerDegree = 111.045 // kilometers per degree;
+              } else {
+                throw new Error('Unknown radius distance units')
+              }
+
+              let [latitudeColumn, longitudeColumn] = field.split(',').map(c => c.trim())
+              let [latitude, longitude] = v.center
+
+              // Uses indexes on `latitudeColumn` / `longitudeColumn` if available
+              query = query
+                .whereBetween(latitudeColumn, [
+                  latitude - (radius / unitsPerDegree),
+                  latitude + (radius / unitsPerDegree)
+                ])
+                .whereBetween(longitudeColumn, [
+                  longitude - (radius / (unitsPerDegree * Math.cos(latitude * (Math.PI / 180)))),
+                  longitude + (radius / (unitsPerDegree * Math.cos(latitude * (Math.PI / 180))))
+                ])
+
+              if (v.calculateDistance) {
+                let distanceColumn = (typeof v.calculateDistance === 'string') ? v.calculateDistance : 'distance'
+                query = query.select(knex.raw(`
+                  ${unitsPerDegree} * DEGREES(ACOS(
+                    COS(RADIANS(?)) * COS(RADIANS(${latitudeColumn})) *
+                    COS(RADIANS(${longitudeColumn}) - RADIANS(?)) +
+                    SIN(RADIANS(?)) * SIN(RADIANS(${latitudeColumn}))
+                  )) AS ${distanceColumn}`, [latitude, longitude, latitude]))
+              }
+            } else if (op === 'like') {
+              query = query.where(field, 'like', v)
+            } else if (op === '|like') {
+              query = query.orWhere(field, 'like', v)
+            } else if (op === '|==' || op === '|===') {
+              if (v === null) {
+                query = query.orWhereNull(field)
+              } else {
+                query = query.orWhere(field, v)
+              }
+            } else if (op === '|!=' || op === '|!==') {
+              if (v === null) {
+                query = query.orWhereNotNull(field)
+              } else {
+                query = query.orWhere(field, '!=', v)
+              }
+            } else if (op === '|>') {
+              query = query.orWhere(field, '>', v)
+            } else if (op === '|>=') {
+              query = query.orWhere(field, '>=', v)
+            } else if (op === '|<') {
+              query = query.orWhere(field, '<', v)
+            } else if (op === '|<=') {
+              query = query.orWhere(field, '<=', v)
+            // } else if (op === '|isectEmpty') {
+            //  subQuery = subQuery ? subQuery.or(row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)
+            // } else if (op === '|isectNotEmpty') {
+            //  subQuery = subQuery ? subQuery.or(row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)
+            } else if (op === '|in') {
+              query = query.orWhere(field, 'in', v)
+            } else if (op === '|notIn') {
+              query = query.orWhereNotIn(field, v)
+            } else {
+              throw new Error('Operator not found')
+            }
           }
         })
       })
     }
 
     if (params.orderBy) {
-      if (DSUtils.isString(params.orderBy)) {
+      if (isString(params.orderBy)) {
         params.orderBy = [
           [params.orderBy, 'asc']
         ]
       }
       for (var i = 0; i < params.orderBy.length; i++) {
-        if (DSUtils.isString(params.orderBy[i])) {
+        if (isString(params.orderBy[i])) {
           params.orderBy[i] = [params.orderBy[i], 'asc']
         }
-        query = DSUtils.upperCase(params.orderBy[i][1]) === 'DESC' ? query.orderBy(params.orderBy[i][0], 'desc') : query.orderBy(params.orderBy[i][0], 'asc')
+        query = params.orderBy[i][1].toUpperCase() === 'DESC' ? query.orderBy(params.orderBy[i][0], 'desc') : query.orderBy(params.orderBy[i][0], 'asc')
       }
     }
 

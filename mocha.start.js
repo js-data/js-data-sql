@@ -29,11 +29,15 @@ for (var key in globals) {
 test.globals(testGlobals);
 
 var config = {
-  client: 'mysql',
+  client: process.env.DB_CLIENT || 'mysql',
   connection: {
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || process.env.C9_USER || 'ubuntu',
     database: process.env.DB_NAME || (process.env.C9_USER ? 'c9' : 'circle_test')
+  },
+  pool: {
+    min: 0,
+    max: 10
   },
   debug: process.env.DEBUG || false
 };

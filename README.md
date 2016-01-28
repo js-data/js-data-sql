@@ -78,6 +78,40 @@ the first place
     - `DB_HOST`: `localhost`
     - `DB_NAME`: `circle_test`
     - `DB_USER`: `ubuntu`
+  - You may use `docker`/`docker-compose` to create MySql and Postgres containers to test against
+    - `docker-compose up -d`
+      - Start containers named `js-data-sql-mysql` and `js-data-sql-pg`
+    - MySQL
+      - Environment variables
+        - `DB_CLIENT` = `mysql` 
+        - `DB_USER` = `root`
+        - `DB_HOST` = `IP of docker-machine if not localhost`
+      - Populate schema
+        - `DB_CLIENT=mysql DB_USER=root npm run migrate-db`
+        - Also set `DB_HOST` if different from `localhost`
+      - Run tests
+      - `npm run mocha-mysql`
+        - Set `DB_HOST` if different from `localhost`
+      - Run cli
+        - `docker exec -it js-data-sql-mysql mysql circle_test`
+    - Postgres
+      - Environment variables
+        - `DB_CLIENT` = `pg` 
+        - `DB_USER` = `ubuntu`
+        - `DB_HOST` = `IP of docker-machine if not localhost`
+      - Populate schema
+        - `DB_CLIENT=pg npm run migrate-db`
+        - Also set `DB_HOST` if different from `localhost`
+      - Run tests
+        - `npm run mocha-pg`
+        - Also set `DB_HOST` if different from `localhost`
+      - `docker exec -it js-data-sql-pg psql -U ubuntu -d circle_test`
+        - Run cli
+    - All databases
+      - Run all tests against MySQL and Postgres
+        - `npm run mocha-all`
+        - Also set `DB_HOST` if different from `localhost`
+        
 1. Your code will be linted and checked for formatting, the tests will be run
 1. The `dist/` folder & files will be generated, do NOT commit `dist/*`! They
 will be committed when a release is cut.

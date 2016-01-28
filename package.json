@@ -28,10 +28,16 @@
   "scripts": {
     "lint": "standard src/index.js",
     "build": "webpack --config webpack.config.js --progress --colors",
-    "mocha": "mocha --timeout 20000 --reporter dot mocha.start.js test/*.spec.js",
+    "mocha-mysql": "DB_CLIENT=mysql DB_USER=root mocha --timeout 20000 --reporter dot mocha.start.js test/*.spec.js",
+    "mocha-pg": "DB_CLIENT=pg mocha --timeout 20000 --reporter dot mocha.start.js test/*.spec.js",
+    "mocha-all": "npm run mocha-mysql && npm run mocha-pg",
     "cover": "istanbul cover --hook-run-in-context node_modules/mocha/bin/_mocha -- --timeout 20000 --reporter dot mocha.start.js test/*.spec.js",
     "test": "npm run lint && npm run build && npm run cover",
-    "ci": "npm run test && cat coverage/lcov.info | coveralls || true && cat ./coverage/lcov.info | codacy-coverage || true"
+    "ci": "npm run test && cat coverage/lcov.info | coveralls || true && cat ./coverage/lcov.info | codacy-coverage || true",
+    
+    "create-migration": "knex --cwd=test migrate:make",
+    "migrate-db": "knex --cwd=test migrate:latest",
+    "rollback-db": "knex --cwd=test migrate:rollback"
   },
   "standard": {
     "parser": "babel-eslint"
