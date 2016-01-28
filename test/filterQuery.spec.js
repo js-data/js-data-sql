@@ -98,4 +98,28 @@ describe('DSSqlAdapter#filterQuery', function () {
       
     assert.equal(filterQuery.toString(), expectedQuery.toString())
   });
+  
+  describe('Custom/override query operators', function () {
+    it('should use custom query operator if provided', function* () {
+      adapter.queryOperators = { "equals": (query, field, value) => query.where(field, value) }
+      var filterQuery = adapter.filterQuery(User, { name: { "equals": "Sean" }});
+      var expectedQuery = adapter.query
+        .from('user')
+        .select('user.*')
+        .where('name', 'Sean')
+        
+      assert.equal(filterQuery.toString(), expectedQuery.toString())
+    });
+    
+    it('should override built-in operator with custom query operator', function* () {
+      adapter.queryOperators = { "==": (query, field, value) => query.where(field, '!=', value) }
+      var filterQuery = adapter.filterQuery(User, { name: { "==": "Sean" }});
+      var expectedQuery = adapter.query
+        .from('user')
+        .select('user.*')
+        .where('name', '!=', 'Sean')
+        
+      assert.equal(filterQuery.toString(), expectedQuery.toString())
+    });
+  });
 });

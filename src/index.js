@@ -156,6 +156,12 @@ class DSSqlAdapter {
   constructor (options) {
     this.defaults = {}
     options = options || {}
+    
+    if (options.queryOperators) {
+      this.queryOperators = options.queryOperators;
+      delete options.queryOperators;
+    }
+    
     if (options.__knex__) {
       this.query = options
     } else {
@@ -347,107 +353,113 @@ class DSSqlAdapter {
         }
         
         forOwn(criteria, (v, op) => {
-          if (op === '==' || op === '===') {
-            if (v === null) {
-              query = query.whereNull(field)
-            } else {
-              query = query.where(field, v)
-            }
-          } else if (op === '!=' || op === '!==') {
-            if (v === null) {
-              query = query.whereNotNull(field)
-            } else {
-              query = query.where(field, '!=', v)
-            }
-          } else if (op === '>') {
-            query = query.where(field, '>', v)
-          } else if (op === '>=') {
-            query = query.where(field, '>=', v)
-          } else if (op === '<') {
-            query = query.where(field, '<', v)
-          } else if (op === '<=') {
-            query = query.where(field, '<=', v)
-          // } else if (op === 'isectEmpty') {
-          //  subQuery = subQuery ? subQuery.and(row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)
-          // } else if (op === 'isectNotEmpty') {
-          //  subQuery = subQuery ? subQuery.and(row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)
-          } else if (op === 'in') {
-            query = query.where(field, 'in', v)
-          } else if (op === 'notIn') {
-            query = query.whereNotIn(field, v)
-          } else if (op === 'near') {
-            const milesRegex = /(\d+(\.\d+)?)\s*(m|M)iles$/
-            const kilometersRegex = /(\d+(\.\d+)?)\s*(k|K)$/
-
-            let radius
-            let unitsPerDegree
-            if (typeof v.radius === 'number' || milesRegex.test(v.radius)) {
-              radius = typeof v.radius === 'number' ? v.radius : v.radius.match(milesRegex)[1]
-              unitsPerDegree = 69.0 // miles per degree
-            } else if (kilometersRegex.test(v.radius)) {
-              radius = v.radius.match(kilometersRegex)[1]
-              unitsPerDegree = 111.045 // kilometers per degree;
-            } else {
-              throw new Error('Unknown radius distance units')
-            }
-
-            let [latitudeColumn, longitudeColumn] = field.split(',').map(c => c.trim())
-            let [latitude, longitude] = v.center
-
-            // Uses indexes on `latitudeColumn` / `longitudeColumn` if available
-            query = query
-              .whereBetween(latitudeColumn, [
-                latitude - (radius / unitsPerDegree),
-                latitude + (radius / unitsPerDegree)
-              ])
-              .whereBetween(longitudeColumn, [
-                longitude - (radius / (unitsPerDegree * Math.cos(latitude * (Math.PI / 180)))),
-                longitude + (radius / (unitsPerDegree * Math.cos(latitude * (Math.PI / 180))))
-              ])
-
-            if (v.calculateDistance) {
-              let distanceColumn = (typeof v.calculateDistance === 'string') ? v.calculateDistance : 'distance'
-              query = query.select(knex.raw(`
-                ${unitsPerDegree} * DEGREES(ACOS(
-                  COS(RADIANS(?)) * COS(RADIANS(${latitudeColumn})) *
-                  COS(RADIANS(${longitudeColumn}) - RADIANS(?)) +
-                  SIN(RADIANS(?)) * SIN(RADIANS(${latitudeColumn}))
-                )) AS ${distanceColumn}`, [latitude, longitude, latitude]))
-            }
-          } else if (op === 'like') {
-            query = query.where(field, 'like', v)
-          } else if (op === '|like') {
-            query = query.orWhere(field, 'like', v)
-          } else if (op === '|==' || op === '|===') {
-            if (v === null) {
-              query = query.orWhereNull(field)
-            } else {
-              query = query.orWhere(field, v)
-            }
-          } else if (op === '|!=' || op === '|!==') {
-            if (v === null) {
-              query = query.orWhereNotNull(field)
-            } else {
-              query = query.orWhere(field, '!=', v)
-            }
-          } else if (op === '|>') {
-            query = query.orWhere(field, '>', v)
-          } else if (op === '|>=') {
-            query = query.orWhere(field, '>=', v)
-          } else if (op === '|<') {
-            query = query.orWhere(field, '<', v)
-          } else if (op === '|<=') {
-            query = query.orWhere(field, '<=', v)
-          // } else if (op === '|isectEmpty') {
-          //  subQuery = subQuery ? subQuery.or(row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)
-          // } else if (op === '|isectNotEmpty') {
-          //  subQuery = subQuery ? subQuery.or(row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)
-          } else if (op === '|in') {
-            query = query.orWhere(field, 'in', v)
-          } else if (op === '|notIn') {
-            query = query.orWhereNotIn(field, v)
+          if (op in (this.queryOperators || {})) {
+            // Custom or overridden operator
+            query = this.queryOperators[op](query, field, v)
           } else {
-            throw new Error('Operator not found')
+            // Builtin operators
+            if (op === '==' || op === '===') {
+              if (v === null) {
+                query = query.whereNull(field)
+              } else {
+                query.where(field, v)
+              }
+            } else if (op === '!=' || op === '!==') {
+              if (v === null) {
+                query = query.whereNotNull(field)
+              } else {
+                query = query.where(field, '!=', v)
+              }
+            } else if (op === '>') {
+              query = query.where(field, '>', v)
+            } else if (op === '>=') {
+              query = query.where(field, '>=', v)
+            } else if (op === '<') {
+              query = query.where(field, '<', v)
+            } else if (op === '<=') {
+              query = query.where(field, '<=', v)
+            // } else if (op === 'isectEmpty') {
+            //  subQuery = subQuery ? subQuery.and(row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)
+            // } else if (op === 'isectNotEmpty') {
+            //  subQuery = subQuery ? subQuery.and(row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)
+            } else if (op === 'in') {
+              query = query.where(field, 'in', v)
+            } else if (op === 'notIn') {
+              query = query.whereNotIn(field, v)
+            } else if (op === 'near') {
+              const milesRegex = /(\d+(\.\d+)?)\s*(m|M)iles$/
+              const kilometersRegex = /(\d+(\.\d+)?)\s*(k|K)$/
+
+              let radius
+              let unitsPerDegree
+              if (typeof v.radius === 'number' || milesRegex.test(v.radius)) {
+                radius = typeof v.radius === 'number' ? v.radius : v.radius.match(milesRegex)[1]
+                unitsPerDegree = 69.0 // miles per degree
+              } else if (kilometersRegex.test(v.radius)) {
+                radius = v.radius.match(kilometersRegex)[1]
+                unitsPerDegree = 111.045 // kilometers per degree;
+              } else {
+                throw new Error('Unknown radius distance units')
+              }
+
+              let [latitudeColumn, longitudeColumn] = field.split(',').map(c => c.trim())
+              let [latitude, longitude] = v.center
+
+              // Uses indexes on `latitudeColumn` / `longitudeColumn` if available
+              query = query
+                .whereBetween(latitudeColumn, [
+                  latitude - (radius / unitsPerDegree),
+                  latitude + (radius / unitsPerDegree)
+                ])
+                .whereBetween(longitudeColumn, [
+                  longitude - (radius / (unitsPerDegree * Math.cos(latitude * (Math.PI / 180)))),
+                  longitude + (radius / (unitsPerDegree * Math.cos(latitude * (Math.PI / 180))))
+                ])
+
+              if (v.calculateDistance) {
+                let distanceColumn = (typeof v.calculateDistance === 'string') ? v.calculateDistance : 'distance'
+                query = query.select(knex.raw(`
+                  ${unitsPerDegree} * DEGREES(ACOS(
+                    COS(RADIANS(?)) * COS(RADIANS(${latitudeColumn})) *
+                    COS(RADIANS(${longitudeColumn}) - RADIANS(?)) +
+                    SIN(RADIANS(?)) * SIN(RADIANS(${latitudeColumn}))
+                  )) AS ${distanceColumn}`, [latitude, longitude, latitude]))
+              }
+            } else if (op === 'like') {
+              query = query.where(field, 'like', v)
+            } else if (op === '|like') {
+              query = query.orWhere(field, 'like', v)
+            } else if (op === '|==' || op === '|===') {
+              if (v === null) {
+                query = query.orWhereNull(field)
+              } else {
+                query = query.orWhere(field, v)
+              }
+            } else if (op === '|!=' || op === '|!==') {
+              if (v === null) {
+                query = query.orWhereNotNull(field)
+              } else {
+                query = query.orWhere(field, '!=', v)
+              }
+            } else if (op === '|>') {
+              query = query.orWhere(field, '>', v)
+            } else if (op === '|>=') {
+              query = query.orWhere(field, '>=', v)
+            } else if (op === '|<') {
+              query = query.orWhere(field, '<', v)
+            } else if (op === '|<=') {
+              query = query.orWhere(field, '<=', v)
+            // } else if (op === '|isectEmpty') {
+            //  subQuery = subQuery ? subQuery.or(row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)
+            // } else if (op === '|isectNotEmpty') {
+            //  subQuery = subQuery ? subQuery.or(row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)
+            } else if (op === '|in') {
+              query = query.orWhere(field, 'in', v)
+            } else if (op === '|notIn') {
+              query = query.orWhereNotIn(field, v)
+            } else {
+              throw new Error('Operator not found')
+            }
           }
         })
       })
