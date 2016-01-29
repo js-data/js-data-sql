@@ -179,7 +179,7 @@ class DSSqlAdapter {
     return query
       .select(`${table}.*`)
       .from(table)
-      .where(resourceConfig.idAttribute, toString(id))
+      .where(`${table}.${resourceConfig.idAttribute}`, toString(id))
       .then(rows => {
         if (!rows.length) {
           return Promise.reject(new Error('Not Found!'))
