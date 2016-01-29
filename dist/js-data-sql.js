@@ -252,7 +252,7 @@ module.exports =
 	      options.with = options.with || [];
 	      var table = getTable(resourceConfig);
 	      var query = options && options.transaction || this.query;
-	      return query.select(table + '.*').from(table).where(resourceConfig.idAttribute, (0, _lang.toString)(id)).then(function (rows) {
+	      return query.select(table + '.*').from(table).where(table + '.' + resourceConfig.idAttribute, (0, _lang.toString)(id)).then(function (rows) {
 	        if (!rows.length) {
 	          return _bluebird2.default.reject(new Error('Not Found!'));
 	        } else {
