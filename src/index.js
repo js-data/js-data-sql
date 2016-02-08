@@ -174,11 +174,12 @@ class DSSqlAdapter {
     let instance
     options = options || {}
     options.with = options.with || []
+    let table = getTable(resourceConfig);
     let query = options && options.transaction || this.query
     return query
-      .select('*')
-      .from(getTable(resourceConfig))
-      .where(resourceConfig.idAttribute, toString(id))
+      .select(`${table}.*`)
+      .from(table)
+      .where(`${table}.${resourceConfig.idAttribute}`, toString(id))
       .then(rows => {
         if (!rows.length) {
           return Promise.reject(new Error('Not Found!'))
@@ -362,7 +363,7 @@ class DSSqlAdapter {
               if (v === null) {
                 query = query.whereNull(field)
               } else {
-                query.where(field, v)
+                query = query.where(field, v)
               }
             } else if (op === '!=' || op === '!==') {
               if (v === null) {
