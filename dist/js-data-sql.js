@@ -116,8 +116,8 @@ module.exports =
 
 	      if ((def.type === 'hasOne' || def.type === 'hasMany') && def.foreignKey) {
 	        task = _this.findAll(resourceConfig.getResource(relationName), {
-	          where: _defineProperty({}, def.foreignKey, instance ? { '==': instance[resourceConfig.idAttribute] } : { 'in': items.map(function (item) {
-	              return item[resourceConfig.idAttribute];
+	          where: _defineProperty({}, def.foreignKey, instance ? { '==': instance[def.localKey || resourceConfig.idAttribute] } : { 'in': items.map(function (item) {
+	              return item[def.localKey || resourceConfig.idAttribute];
 	            }) })
 	        }, __options).then(function (relatedItems) {
 	          if (instance) {
@@ -129,7 +129,7 @@ module.exports =
 	          } else {
 	            items.forEach(function (item) {
 	              var attached = relatedItems.filter(function (ri) {
-	                return ri[def.foreignKey] === item[resourceConfig.idAttribute];
+	                return ri[def.foreignKey] === item[def.localKey || resourceConfig.idAttribute];
 	              });
 	              if (def.type === 'hasOne' && attached.length) {
 	                item[def.localField] = attached[0];
@@ -184,7 +184,10 @@ module.exports =
 	        if (instance) {
 	          var id = (0, _object.get)(instance, def.localKey);
 	          if (id) {
-	            task = _this.find(resourceConfig.getResource(relationName), (0, _object.get)(instance, def.localKey), __options).then(function (relatedItem) {
+	            task = _this.findAll(resourceConfig.getResource(relationName), {
+	              where: _defineProperty({}, def.foreignKey || relationDef.idAttribute, { '==': id })
+	            }, __options).then(function (relatedItems) {
+	              var relatedItem = relatedItems && relatedItems[0];
 	              instance[def.localField] = relatedItem;
 	              return relatedItem;
 	            });
@@ -197,13 +200,11 @@ module.exports =
 	          });
 	          if (ids.length) {
 	            task = _this.findAll(resourceConfig.getResource(relationName), {
-	              where: _defineProperty({}, relationDef.idAttribute, {
-	                'in': ids
-	              })
+	              where: _defineProperty({}, def.foreignKey || relationDef.idAttribute, { 'in': ids })
 	            }, __options).then(function (relatedItems) {
 	              items.forEach(function (item) {
 	                relatedItems.forEach(function (relatedItem) {
-	                  if (relatedItem[relationDef.idAttribute] === item[def.localKey]) {
+	                  if (relatedItem[def.foreignKey || relationDef.idAttribute] === item[def.localKey]) {
 	                    item[def.localField] = relatedItem;
 	                  }
 	                });
