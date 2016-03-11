@@ -54,8 +54,8 @@ function loadWithRelations (items, resourceConfig, options) {
         task = this.findAll(resourceConfig.getResource(relationName), {
           where: {
             [def.foreignKey]: instance ? 
-              { '==': instance[resourceConfig.idAttribute] } :
-              { 'in': items.map(item => item[resourceConfig.idAttribute]) }
+              { '==': instance[def.localKey || resourceConfig.idAttribute] } :
+              { 'in': items.map(item => item[def.localKey || resourceConfig.idAttribute]) }
           }
         }, __options).then(relatedItems => {
           if (instance) {
@@ -66,7 +66,7 @@ function loadWithRelations (items, resourceConfig, options) {
             }
           } else {
             items.forEach(item => {
-              let attached = relatedItems.filter(ri => ri[def.foreignKey] === item[resourceConfig.idAttribute])
+              let attached = relatedItems.filter(ri => ri[def.foreignKey] === item[def.localKey || resourceConfig.idAttribute])
               if (def.type === 'hasOne' && attached.length) {
                 item[def.localField] = attached[0]
               } else {
@@ -116,7 +116,12 @@ function loadWithRelations (items, resourceConfig, options) {
         if (instance) {
           let id = get(instance, def.localKey)
           if (id) {
-            task = this.find(resourceConfig.getResource(relationName), get(instance, def.localKey), __options).then(relatedItem => {
+            task = this.findAll(resourceConfig.getResource(relationName), {
+              where: {
+                [def.foreignKey || relationDef.idAttribute]: { '==': id }
+              }
+            }, __options).then(relatedItems => {
+              let relatedItem = relatedItems && relatedItems[0];
               instance[def.localField] = relatedItem
               return relatedItem
             })
@@ -126,14 +131,12 @@ function loadWithRelations (items, resourceConfig, options) {
           if (ids.length) {
             task = this.findAll(resourceConfig.getResource(relationName), {
               where: {
-                [relationDef.idAttribute]: {
-                  'in': ids
-                }
+                [def.foreignKey || relationDef.idAttribute]: { 'in': ids }
               }
             }, __options).then(relatedItems => {
               items.forEach(item => {
                 relatedItems.forEach(relatedItem => {
-                  if (relatedItem[relationDef.idAttribute] === item[def.localKey]) {
+                  if (relatedItem[def.foreignKey || relationDef.idAttribute] === item[def.localKey]) {
                     item[def.localField] = relatedItem
                   }
                 })
