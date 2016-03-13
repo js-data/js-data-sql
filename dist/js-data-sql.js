@@ -426,7 +426,13 @@ module.exports =
 	                  // Perform `WHERE EXISTS` subquery for hasMany property
 	                  var existsParams = _defineProperty({}, parts[0], criteria);
 	                  var subQuery = _this7.filterQuery(relationResourceConfig, existsParams, options).whereRaw('??.??=??.??', [getTable(relationResourceConfig), relation.foreignKey, getTable(localResourceConfig), localResourceConfig.idAttribute]);
-	                  query.whereExists(subQuery);
+	                  if (Object.keys(criteria).some(function (k) {
+	                    return k.indexOf('|') > -1;
+	                  })) {
+	                    query.orWhereExists(subQuery);
+	                  } else {
+	                    query.whereExists(subQuery);
+	                  }
 	                  criteria = null; // criteria handled by EXISTS subquery
 	                }
 
