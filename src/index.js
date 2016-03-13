@@ -334,7 +334,11 @@ class DSSqlAdapter {
                     getTable(localResourceConfig),
                     localResourceConfig.idAttribute
                   ])
-                query.whereExists(subQuery);
+                if (Object.keys(criteria).some(k => k.indexOf('|') > -1)) {
+                  query.orWhereExists(subQuery);
+                } else {
+                  query.whereExists(subQuery);
+                }
                 criteria = null; // criteria handled by EXISTS subquery
               }
               
