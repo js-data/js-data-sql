@@ -47,9 +47,9 @@ module.exports =
 
 	'use strict';
 
-	var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; })();
-
 	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+	var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; })();
 
 	var _knex = __webpack_require__(1);
 
@@ -81,6 +81,67 @@ module.exports =
 
 	function getTable(resourceConfig) {
 	  return resourceConfig.table || (0, _string.underscore)(resourceConfig.name);
+	}
+
+	function processRelationField(resourceConfig, query, field, criteria, options, joinedTables) {
+	  var fieldParts = field.split('.');
+	  var localResourceConfig = resourceConfig;
+	  var relationPath = [];
+	  var relationName = null;
+
+	  while (fieldParts.length >= 2) {
+	    relationName = fieldParts.shift();
+
+	    var _localResourceConfig$ = localResourceConfig.relationList.filter(function (r) {
+	      return r.relation === relationName || r.localField === relationName;
+	    });
+
+	    var _localResourceConfig$2 = _slicedToArray(_localResourceConfig$, 1);
+
+	    var relation = _localResourceConfig$2[0];
+
+	    if (relation) {
+	      var relationResourceConfig = resourceConfig.getResource(relation.relation);
+	      relationPath.push(relation.relation);
+
+	      if (relation.type === 'belongsTo' || relation.type === 'hasOne') {
+	        // Apply table join for belongsTo/hasOne property (if not done already)
+	        if (!joinedTables.some(function (t) {
+	          return t === relationPath.join('.');
+	        })) {
+	          var table = getTable(localResourceConfig);
+	          var localId = table + '.' + relation.localKey;
+
+	          var relationTable = getTable(relationResourceConfig);
+	          var foreignId = relationTable + '.' + relationResourceConfig.idAttribute;
+
+	          query.join(relationTable, localId, foreignId);
+	          joinedTables.push(relationPath.join('.'));
+	        }
+	      } else if (relation.type === 'hasMany') {
+	        // Perform `WHERE EXISTS` subquery for hasMany property
+	        var existsParams = _defineProperty({}, relationName + '.' + fieldParts.splice(0).join('.'), criteria);
+	        // remaining field(s) handled by EXISTS subquery
+	        var subQueryTable = getTable(relationResourceConfig);
+	        var subQueryOptions = (0, _object.deepMixIn)({ query: (0, _knex2.default)(this.defaults).select(subQueryTable + '.*').from(subQueryTable) }, options);
+	        var subQuery = this.filterQuery(relationResourceConfig, existsParams, subQueryOptions).whereRaw('??.??=??.??', [getTable(relationResourceConfig), relation.foreignKey, getTable(localResourceConfig), localResourceConfig.idAttribute]);
+	        if (Object.keys(criteria).some(function (k) {
+	          return k.indexOf('|') > -1;
+	        })) {
+	          query.orWhereExists(subQuery);
+	        } else {
+	          query.whereExists(subQuery);
+	        }
+	      }
+
+	      localResourceConfig = relationResourceConfig;
+	    } else {
+	      // hopefully a qualified local column
+	    }
+	  }
+	  relationName = fieldParts.shift();
+
+	  return relationName ? getTable(localResourceConfig) + '.' + relationName : null;
 	}
 
 	function loadWithRelations(items, resourceConfig, options) {
@@ -388,189 +449,130 @@ module.exports =
 	            };
 	          }
 
-	          var processRelationField = function processRelationField(field) {
-	            var parts = field.split('.');
-	            var localResourceConfig = resourceConfig;
-	            var relationPath = [];
-
-	            var _loop = function _loop() {
-	              var relationName = parts.shift();
-
-	              var _localResourceConfig$ = localResourceConfig.relationList.filter(function (r) {
-	                return r.relation === relationName || r.localField === relationName;
-	              });
-
-	              var _localResourceConfig$2 = _slicedToArray(_localResourceConfig$, 1);
-
-	              var relation = _localResourceConfig$2[0];
-
-	              if (relation) {
-	                var relationResourceConfig = resourceConfig.getResource(relation.relation);
-	                relationPath.push(relation.relation);
-
-	                if (relation.type === 'belongsTo' || relation.type === 'hasOne') {
-	                  // Apply table join for belongsTo/hasOne property (if not done already)
-	                  if (!joinedTables.some(function (t) {
-	                    return t === relationPath.join('.');
-	                  })) {
-	                    var _table = getTable(localResourceConfig);
-	                    var localId = _table + '.' + relation.localKey;
-
-	                    var relationTable = getTable(relationResourceConfig);
-	                    var foreignId = relationTable + '.' + relationResourceConfig.idAttribute;
-
-	                    query.join(relationTable, localId, foreignId);
-	                    joinedTables.push(relationPath.join('.'));
-	                  }
-	                } else if (relation.type === 'hasMany') {
-	                  // Perform `WHERE EXISTS` subquery for hasMany property
-	                  var existsParams = _defineProperty({}, parts[0], criteria);
-	                  var subQuery = _this7.filterQuery(relationResourceConfig, existsParams, options).whereRaw('??.??=??.??', [getTable(relationResourceConfig), relation.foreignKey, getTable(localResourceConfig), localResourceConfig.idAttribute]);
-	                  if (Object.keys(criteria).some(function (k) {
-	                    return k.indexOf('|') > -1;
-	                  })) {
-	                    query.orWhereExists(subQuery);
-	                  } else {
-	                    query.whereExists(subQuery);
-	                  }
-	                  criteria = null; // criteria handled by EXISTS subquery
-	                }
-
-	                localResourceConfig = relationResourceConfig;
-	              } else {
-	                // hopefully a qualified local column
-	              }
-	            };
-
-	            while (parts.length >= 2) {
-	              _loop();
-	            }
-
-	            return getTable(localResourceConfig) + '.' + parts[0];
-	          };
-
 	          if ((0, _array.contains)(field, '.')) {
 	            if ((0, _array.contains)(field, ',')) {
 	              var splitFields = field.split(',').map(function (c) {
 	                return c.trim();
 	              });
 	              field = splitFields.map(function (splitField) {
-	                return processRelationField(splitField);
+	                return processRelationField.call(_this7, resourceConfig, query, splitField, criteria, options, joinedTables);
 	              }).join(',');
 	            } else {
-	              field = processRelationField(field, query, resourceConfig, joinedTables);
+	              field = processRelationField.call(_this7, resourceConfig, query, field, criteria, options, joinedTables);
 	            }
 	          }
 
-	          (0, _object.forOwn)(criteria, function (v, op) {
-	            if (op in (_this7.queryOperators || {})) {
-	              // Custom or overridden operator
-	              query = _this7.queryOperators[op](query, field, v);
-	            } else {
-	              // Builtin operators
-	              if (op === '==' || op === '===') {
-	                if (v === null) {
-	                  query = query.whereNull(field);
-	                } else {
-	                  query = query.where(field, v);
-	                }
-	              } else if (op === '!=' || op === '!==') {
-	                if (v === null) {
-	                  query = query.whereNotNull(field);
-	                } else {
-	                  query = query.where(field, '!=', v);
-	                }
-	              } else if (op === '>') {
-	                query = query.where(field, '>', v);
-	              } else if (op === '>=') {
-	                query = query.where(field, '>=', v);
-	              } else if (op === '<') {
-	                query = query.where(field, '<', v);
-	              } else if (op === '<=') {
-	                query = query.where(field, '<=', v);
-	                // } else if (op === 'isectEmpty') {
-	                //  subQuery = subQuery ? subQuery.and(row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)
-	                // } else if (op === 'isectNotEmpty') {
-	                //  subQuery = subQuery ? subQuery.and(row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)
-	              } else if (op === 'in') {
-	                  query = query.where(field, 'in', v);
-	                } else if (op === 'notIn') {
-	                  query = query.whereNotIn(field, v);
-	                } else if (op === 'near') {
-	                  var milesRegex = /(\d+(\.\d+)?)\s*(m|M)iles$/;
-	                  var kilometersRegex = /(\d+(\.\d+)?)\s*(k|K)$/;
+	          if (field) {
+	            (0, _object.forOwn)(criteria, function (v, op) {
+	              if (op in (_this7.queryOperators || {})) {
+	                // Custom or overridden operator
+	                query = _this7.queryOperators[op](query, field, v);
+	              } else {
+	                // Builtin operators
+	                if (op === '==' || op === '===') {
+	                  if (v === null) {
+	                    query = query.whereNull(field);
+	                  } else {
+	                    query = query.where(field, v);
+	                  }
+	                } else if (op === '!=' || op === '!==') {
+	                  if (v === null) {
+	                    query = query.whereNotNull(field);
+	                  } else {
+	                    query = query.where(field, '!=', v);
+	                  }
+	                } else if (op === '>') {
+	                  query = query.where(field, '>', v);
+	                } else if (op === '>=') {
+	                  query = query.where(field, '>=', v);
+	                } else if (op === '<') {
+	                  query = query.where(field, '<', v);
+	                } else if (op === '<=') {
+	                  query = query.where(field, '<=', v);
+	                  // } else if (op === 'isectEmpty') {
+	                  //  subQuery = subQuery ? subQuery.and(row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)
+	                  // } else if (op === 'isectNotEmpty') {
+	                  //  subQuery = subQuery ? subQuery.and(row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)
+	                } else if (op === 'in') {
+	                    query = query.where(field, 'in', v);
+	                  } else if (op === 'notIn') {
+	                    query = query.whereNotIn(field, v);
+	                  } else if (op === 'near') {
+	                    var milesRegex = /(\d+(\.\d+)?)\s*(m|M)iles$/;
+	                    var kilometersRegex = /(\d+(\.\d+)?)\s*(k|K)$/;
 
-	                  var radius = undefined;
-	                  var unitsPerDegree = undefined;
-	                  if (typeof v.radius === 'number' || milesRegex.test(v.radius)) {
-	                    radius = typeof v.radius === 'number' ? v.radius : v.radius.match(milesRegex)[1];
-	                    unitsPerDegree = 69.0; // miles per degree
-	                  } else if (kilometersRegex.test(v.radius)) {
-	                      radius = v.radius.match(kilometersRegex)[1];
-	                      unitsPerDegree = 111.045; // kilometers per degree;
+	                    var radius = undefined;
+	                    var unitsPerDegree = undefined;
+	                    if (typeof v.radius === 'number' || milesRegex.test(v.radius)) {
+	                      radius = typeof v.radius === 'number' ? v.radius : v.radius.match(milesRegex)[1];
+	                      unitsPerDegree = 69.0; // miles per degree
+	                    } else if (kilometersRegex.test(v.radius)) {
+	                        radius = v.radius.match(kilometersRegex)[1];
+	                        unitsPerDegree = 111.045; // kilometers per degree;
+	                      } else {
+	                          throw new Error('Unknown radius distance units');
+	                        }
+
+	                    var _field$split$map = field.split(',').map(function (c) {
+	                      return c.trim();
+	                    });
+
+	                    var _field$split$map2 = _slicedToArray(_field$split$map, 2);
+
+	                    var latitudeColumn = _field$split$map2[0];
+	                    var longitudeColumn = _field$split$map2[1];
+
+	                    var _v$center = _slicedToArray(v.center, 2);
+
+	                    var latitude = _v$center[0];
+	                    var longitude = _v$center[1];
+
+	                    // Uses indexes on `latitudeColumn` / `longitudeColumn` if available
+
+	                    query = query.whereBetween(latitudeColumn, [latitude - radius / unitsPerDegree, latitude + radius / unitsPerDegree]).whereBetween(longitudeColumn, [longitude - radius / (unitsPerDegree * Math.cos(latitude * (Math.PI / 180))), longitude + radius / (unitsPerDegree * Math.cos(latitude * (Math.PI / 180)))]);
+
+	                    if (v.calculateDistance) {
+	                      var distanceColumn = typeof v.calculateDistance === 'string' ? v.calculateDistance : 'distance';
+	                      query = query.select(_knex2.default.raw('\n                    ' + unitsPerDegree + ' * DEGREES(ACOS(\n                      COS(RADIANS(?)) * COS(RADIANS(' + latitudeColumn + ')) *\n                      COS(RADIANS(' + longitudeColumn + ') - RADIANS(?)) +\n                      SIN(RADIANS(?)) * SIN(RADIANS(' + latitudeColumn + '))\n                    )) AS ' + distanceColumn, [latitude, longitude, latitude]));
+	                    }
+	                  } else if (op === 'like') {
+	                    query = query.where(field, 'like', v);
+	                  } else if (op === '|like') {
+	                    query = query.orWhere(field, 'like', v);
+	                  } else if (op === '|==' || op === '|===') {
+	                    if (v === null) {
+	                      query = query.orWhereNull(field);
 	                    } else {
-	                        throw new Error('Unknown radius distance units');
-	                      }
-
-	                  var _field$split$map = field.split(',').map(function (c) {
-	                    return c.trim();
-	                  });
-
-	                  var _field$split$map2 = _slicedToArray(_field$split$map, 2);
-
-	                  var latitudeColumn = _field$split$map2[0];
-	                  var longitudeColumn = _field$split$map2[1];
-
-	                  var _v$center = _slicedToArray(v.center, 2);
-
-	                  var latitude = _v$center[0];
-	                  var longitude = _v$center[1];
-
-	                  // Uses indexes on `latitudeColumn` / `longitudeColumn` if available
-
-	                  query = query.whereBetween(latitudeColumn, [latitude - radius / unitsPerDegree, latitude + radius / unitsPerDegree]).whereBetween(longitudeColumn, [longitude - radius / (unitsPerDegree * Math.cos(latitude * (Math.PI / 180))), longitude + radius / (unitsPerDegree * Math.cos(latitude * (Math.PI / 180)))]);
-
-	                  if (v.calculateDistance) {
-	                    var distanceColumn = typeof v.calculateDistance === 'string' ? v.calculateDistance : 'distance';
-	                    query = query.select(_knex2.default.raw('\n                  ' + unitsPerDegree + ' * DEGREES(ACOS(\n                    COS(RADIANS(?)) * COS(RADIANS(' + latitudeColumn + ')) *\n                    COS(RADIANS(' + longitudeColumn + ') - RADIANS(?)) +\n                    SIN(RADIANS(?)) * SIN(RADIANS(' + latitudeColumn + '))\n                  )) AS ' + distanceColumn, [latitude, longitude, latitude]));
-	                  }
-	                } else if (op === 'like') {
-	                  query = query.where(field, 'like', v);
-	                } else if (op === '|like') {
-	                  query = query.orWhere(field, 'like', v);
-	                } else if (op === '|==' || op === '|===') {
-	                  if (v === null) {
-	                    query = query.orWhereNull(field);
-	                  } else {
-	                    query = query.orWhere(field, v);
-	                  }
-	                } else if (op === '|!=' || op === '|!==') {
-	                  if (v === null) {
-	                    query = query.orWhereNotNull(field);
-	                  } else {
-	                    query = query.orWhere(field, '!=', v);
-	                  }
-	                } else if (op === '|>') {
-	                  query = query.orWhere(field, '>', v);
-	                } else if (op === '|>=') {
-	                  query = query.orWhere(field, '>=', v);
-	                } else if (op === '|<') {
-	                  query = query.orWhere(field, '<', v);
-	                } else if (op === '|<=') {
-	                  query = query.orWhere(field, '<=', v);
-	                  // } else if (op === '|isectEmpty') {
-	                  //  subQuery = subQuery ? subQuery.or(row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)
-	                  // } else if (op === '|isectNotEmpty') {
-	                  //  subQuery = subQuery ? subQuery.or(row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)
-	                } else if (op === '|in') {
-	                    query = query.orWhere(field, 'in', v);
-	                  } else if (op === '|notIn') {
-	                    query = query.orWhereNotIn(field, v);
-	                  } else {
-	                    throw new Error('Operator not found');
-	                  }
-	            }
-	          });
+	                      query = query.orWhere(field, v);
+	                    }
+	                  } else if (op === '|!=' || op === '|!==') {
+	                    if (v === null) {
+	                      query = query.orWhereNotNull(field);
+	                    } else {
+	                      query = query.orWhere(field, '!=', v);
+	                    }
+	                  } else if (op === '|>') {
+	                    query = query.orWhere(field, '>', v);
+	                  } else if (op === '|>=') {
+	                    query = query.orWhere(field, '>=', v);
+	                  } else if (op === '|<') {
+	                    query = query.orWhere(field, '<', v);
+	                  } else if (op === '|<=') {
+	                    query = query.orWhere(field, '<=', v);
+	                    // } else if (op === '|isectEmpty') {
+	                    //  subQuery = subQuery ? subQuery.or(row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().eq(0)
+	                    // } else if (op === '|isectNotEmpty') {
+	                    //  subQuery = subQuery ? subQuery.or(row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)) : row(field).default([]).setIntersection(r.expr(v).default([])).count().ne(0)
+	                  } else if (op === '|in') {
+	                      query = query.orWhere(field, 'in', v);
+	                    } else if (op === '|notIn') {
+	                      query = query.orWhereNotIn(field, v);
+	                    } else {
+	                      throw new Error('Operator not found');
+	                    }
+	              }
+	            });
+	          }
 	        });
 	      }
 
