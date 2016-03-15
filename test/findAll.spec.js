@@ -85,7 +85,31 @@ describe('DSSqlAdapter#findAll', function () {
     assert.equal(users[0].name, 'Jason');
     assert.equal(users[1].name, 'Sean');
   });
-
+  
+  it("should filter through a hasMany relation", function* () {
+    let user1 = yield adapter.create(User, {name: 'Sean'});
+    let user2 = yield adapter.create(User, {name: 'Jason'});
+    let user3 = yield adapter.create(User, {name: 'Ed'});
+    
+    let post1 = yield adapter.create(Post, {userId: user1.id, content: 'post1'});
+    let comment1_1 = yield adapter.create(Comment, {userId: user1.id, postId: post1.id, content: 'comment1_1'});
+    let comment1_2 = yield adapter.create(Comment, {userId: user2.id, postId: post1.id, content: 'comment1_2'});
+    let comment1_3 = yield adapter.create(Comment, {userId: user3.id, postId: post1.id, content: 'comment1_3'});
+    
+    let post2 = yield adapter.create(Post, {userId: user1.id, content: 'post2'});
+    let comment2_1 = yield adapter.create(Comment, {userId: user2.id, postId: post2.id, content: 'comment1_2'});
+    let comment2_2 = yield adapter.create(Comment, {userId: user3.id, postId: post2.id, content: 'comment1_3'});
+    
+    let post3 = yield adapter.create(Post, {userId: user1.id, content: 'post3'});
+    let comment3_1 = yield adapter.create(Comment, {userId: user1.id, postId: post3.id, content: 'comment1_1'});
+    let comment3_3 = yield adapter.create(Comment, {userId: user3.id, postId: post3.id, content: 'comment1_3'});
+    
+    let posts = yield adapter.findAll(Post, {where: {'comments.user.name': {'==': 'Sean'} }, orderBy: 'content'});
+    assert.equal(posts.length, 2);
+    assert.equal(posts[0].content, 'post1');
+    assert.equal(posts[1].content, 'post3');
+  });
+  
   describe('near', function () {
     beforeEach(function * () {
       this.googleAddress    = yield adapter.create(Address, { name : 'Google',    latitude: 37.4219999, longitude: -122.0862515 });
