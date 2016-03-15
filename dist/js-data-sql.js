@@ -123,7 +123,7 @@ module.exports =
 	        var existsParams = _defineProperty({}, relationName + '.' + fieldParts.splice(0).join('.'), criteria);
 	        // remaining field(s) handled by EXISTS subquery
 	        var subQueryTable = getTable(relationResourceConfig);
-	        var subQueryOptions = (0, _object.deepMixIn)({ query: (0, _knex2.default)(this.defaults).select(subQueryTable + '.*').from(subQueryTable) }, options);
+	        var subQueryOptions = (0, _object.deepMixIn)({}, options, { query: (0, _knex2.default)(this.defaults).select(subQueryTable + '.*').from(subQueryTable) });
 	        var subQuery = this.filterQuery(relationResourceConfig, existsParams, subQueryOptions).whereRaw('??.??=??.??', [getTable(relationResourceConfig), relation.foreignKey, getTable(localResourceConfig), localResourceConfig.idAttribute]);
 	        if (Object.keys(criteria).some(function (k) {
 	          return k.indexOf('|') > -1;
