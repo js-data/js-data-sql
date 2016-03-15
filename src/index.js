@@ -52,7 +52,7 @@ function processRelationField (resourceConfig, query, field, criteria, options, 
           [`${relationName}.${fieldParts.splice(0).join('.')}`]: criteria // remaining field(s) handled by EXISTS subquery
         };
         let subQueryTable = getTable(relationResourceConfig);
-        let subQueryOptions = deepMixIn({ query: knex(this.defaults).select(`${subQueryTable}.*`).from(subQueryTable) }, options)
+        let subQueryOptions = deepMixIn({}, options, { query: knex(this.defaults).select(`${subQueryTable}.*`).from(subQueryTable) })
         let subQuery = this.filterQuery(relationResourceConfig, existsParams, subQueryOptions)
           .whereRaw('??.??=??.??', [
             getTable(relationResourceConfig),
