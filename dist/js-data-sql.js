@@ -115,7 +115,7 @@ module.exports =
 	          var relationTable = getTable(relationResourceConfig);
 	          var foreignId = relationTable + '.' + relationResourceConfig.idAttribute;
 
-	          query.join(relationTable, localId, foreignId);
+	          query.leftJoin(relationTable, localId, foreignId);
 	          joinedTables.push(relationPath.join('.'));
 	        }
 	      } else if (relation.type === 'hasMany') {
