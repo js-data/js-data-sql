@@ -43,7 +43,7 @@ function processRelationField (resourceConfig, query, field, criteria, options, 
           let relationTable = getTable(relationResourceConfig)
           let foreignId = `${relationTable}.${relationResourceConfig.idAttribute}`
 
-          query.join(relationTable, localId, foreignId)
+          query.leftJoin(relationTable, localId, foreignId)
           joinedTables.push(relationPath.join('.'))
         }
       } else if (relation.type === 'hasMany') {
