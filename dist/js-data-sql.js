@@ -774,16 +774,20 @@ jsDataAdapter.Adapter.extend({
  * otherwise `false` if the current version is not beta.
  */
 var version = {
-  full: '1.0.0',
+  full: '1.0.1',
   major: 1,
   minor: 0,
-  patch: 0
+  patch: 1
 };
 
 /**
  * {@link SqlAdapter} class.
  *
- * @example
+ * @example <caption>CommonJS</caption>
+ * const SqlAdapter = require('js-data-sql').SqlAdapter;
+ * const adapter = new SqlAdapter();
+ *
+ * @example <caption>ES2015 Modules</caption>
  * import { SqlAdapter } from 'js-data-sql';
  * const adapter = new SqlAdapter();
  *
@@ -807,21 +811,6 @@ var version = {
  * const adapter = new SqlAdapter();
  *
  * @module js-data-sql
- */
-
-/**
- * {@link SqlAdapter} class.
- *
- * @example <caption>CommonJS</caption>
- * const SqlAdapter = require('js-data-sql').SqlAdapter;
- * const adapter = new SqlAdapter();
- *
- * @example <caption>ES2015 Modules</caption>
- * import { SqlAdapter } from 'js-data-sql';
- * const adapter = new SqlAdapter();
- *
- * @name module:js-data-sql.SqlAdapter
- * @see SqlAdapter
  */
 
 /**
