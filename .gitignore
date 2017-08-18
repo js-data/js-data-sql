@@ -35,5 +35,3 @@ doc/
 *.db
 
 .nyc_output/
-dist/*.js
-dist/*.map
