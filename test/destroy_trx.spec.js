@@ -1,35 +1,52 @@
-describe('DSSqlAdapter#destroy + transaction', function () {
-  it('commit should destroy a user from a Sql db', function* () {
-    var createUser = yield adapter.create(User, {name: 'John'})
-    var id = createUser.id;
+describe('SqlAdapter#destroy + transaction', function () {
+  var adapter, User
 
-    yield adapter.query.transaction(co.wrap(function * (trx) {
-      return adapter.destroy(User, id, {transaction: trx});
-    }));
+  beforeEach(function () {
+    adapter = this.$$adapter
+    User = this.$$User
+  })
 
-    try {
-      var findUser = yield adapter.find(User, id);
-      throw new Error('Should not have reached here!');
-    } catch (err) {
-      assert.equal(err.message, 'Not Found!');
-    }
-  });
+  it('commit should destroy a user from a Sql db', function () {
+    var id
 
-  it('rollback should not destroy a user from a Sql db', function* () {
-    var createUser = yield adapter.create(User, {name: 'John'})
-    var id = createUser.id;
+    return adapter.create(User, { name: 'John' })
+      .then((user) => {
+        assert.isObject(user)
+        id = user.id
+        return adapter.knex.transaction((trx) => {
+          return adapter.destroy(User, id, { transaction: trx })
+        })
+      })
+      .then(() => {
+        return adapter.find(User, id)
+      })
+      .then((user) => {
+        assert.equal(user, undefined, 'user should have been destroyed')
+      })
+  })
 
-    try {
-      yield adapter.query.transaction(co.wrap(function * (trx) {
-        yield adapter.destroy(User, createUser.id, {transaction: trx});
+  it('rollback should not destroy a user from a Sql db', function () {
+    var id
 
-        throw new Error('rollback');
-      }));
-    } catch (err) {
-      assert.equal(err.message, 'rollback');
-    }
-
-    var findUser = yield adapter.find(User, id);
-    assert.isObject(findUser, 'user still exists');
-  });
-});
+    return adapter.create(User, { name: 'John' })
+      .then((user) => {
+        assert.isObject(user)
+        id = user.id
+        return adapter.knex.transaction((trx) => {
+          return adapter.destroy(User, id, { transaction: trx })
+            .then(() => {
+              throw new Error('rollback')
+            })
+        })
+      })
+      .then(() => {
+        throw new Error('should not have reached this')
+      }, (err) => {
+        assert.equal(err.message, 'rollback')
+        return adapter.find(User, id)
+      })
+      .then((user) => {
+        assert.isObject(user, 'user still exists')
+      })
+  })
+})

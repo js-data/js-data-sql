@@ -1,11 +1,25 @@
+# Adjust the behavior of the virtual machine (VM)
 machine:
   node:
-    version: 4.1.0
-
+    version: 6.11.2
 database:
   override:
     - DB_CLIENT=mysql npm run migrate-db
     - DB_CLIENT=pg npm run migrate-db
+
+# Use for broader build-related configuration
+general:
+  branches:
+    ignore:
+      - gh-pages
+
+# Install your project's language-specific dependencies
+dependencies:
+  pre:
+    - npm install -g nyc codecov
+    - npm install pg mysql
+
+# Run your tests
 test:
-  override:
-    - npm run ci
+  post:
+    - nyc report --reporter=lcov > coverage.lcov && codecov

@@ -1,42 +1,54 @@
-describe('DSSqlAdapter#create + transaction', function () {
-  it('commit should persist created user in a sql db', function* () {
-    var id;
+describe('SqlAdapter#create + transaction', function () {
+  var adapter, User
 
-    yield adapter.query.transaction(co.wrap(function * (trx) {
-      var createUser = yield adapter.create(User, {name: 'Jane'}, {transaction: trx});
-      id = createUser.id;
-      assert.equal(createUser.name, 'Jane');
-      assert.isDefined(createUser.id);
-    }));
+  beforeEach(function () {
+    adapter = this.$$adapter
+    User = this.$$User
+  })
 
-    var findUser = yield adapter.find(User, id);
-    assert.isObject(findUser, 'user committed to database');
-    assert.equal(findUser.name, 'Jane');
-    assert.isDefined(findUser.id);
-    assert.equalObjects(findUser, {id: id, name: 'Jane', age: null, profileId: null, addressId: null});
-  });
+  it('commit should persist created user in a sql db', function () {
+    var id
 
-  it('rollback should not persist created user in a sql db', function* () {
-    var id;
+    return adapter.knex.transaction((trx) => {
+      return adapter.create(User, { name: 'Jane' }, { transaction: trx })
+    })
+      .then((user) => {
+        id = user.id
+        assert.equal(user.name, 'Jane')
+        assert.isDefined(user.id)
+      })
+      .then(() => {
+        return adapter.find(User, id)
+      })
+      .then((user) => {
+        assert.isObject(user, 'user committed to database')
+        assert.equal(user.name, 'Jane')
+        assert.isDefined(user.id)
+        assert.equalObjects(user, { id: id, name: 'Jane', age: null, addressId: null })
+      })
+  })
 
-    try {
-      yield adapter.query.transaction(co.wrap(function * (trx) {
-        var createUser = yield adapter.create(User, {name: 'John'}, {transaction: trx});
-        id = createUser.id;
-        assert.equal(createUser.name, 'John');
-        assert.isDefined(createUser.id);
+  it('rollback should not persist created user in a sql db', function () {
+    var id
 
-        throw new Error('rollback');
-      }));
-    } catch (err) {
-      assert.equal(err.message, 'rollback');
-    }
+    return adapter.knex.transaction((trx) => {
+      return adapter.create(User, { name: 'John' }, { transaction: trx })
+        .then((user) => {
+          id = user.id
+          assert.equal(user.name, 'John')
+          assert.isDefined(user.id)
 
-    try {
-      var findUser = yield adapter.find(User, id);
-      throw new Error('user committed to database');
-    } catch(err) {
-      assert.equal(err.message, 'Not Found!');
-    }
-  });
-});
+          throw new Error('rollback')
+        })
+    })
+      .then(() => {
+        throw new Error('should not have reached this!')
+      }, (err) => {
+        assert.equal(err.message, 'rollback')
+        return adapter.find(User, id)
+      })
+      .then((user) => {
+        assert.equal(user, undefined, 'user should not have been commited to the database')
+      })
+  })
+})

@@ -30,3 +30,10 @@ node_modules
 .idea/
 *.iml
 coverage/
+.open
+doc/
+*.db
+
+.nyc_output/
+dist/*.js
+dist/*.map

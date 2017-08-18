@@ -1,3 +1,48 @@
+##### 1.0.0 - 17 August 2017
+
+Stable 1.0.0 release
+
+##### 1.0.0-beta.3 - 16 May 2016
+
+###### Bug fixes
+- Small fix for filterQuery
+
+##### 1.0.0-beta.2 - 16 May 2016
+
+###### Breaking changes
+- Renamed `knexOptions` to `knexOpts` to be consistent with other adapters.
+
+###### Backwards compatible changes
+- Added support for grouped where clauses
+
+##### 1.0.0-beta.1 - 14 May 2016
+
+Official v1 beta release
+
+###### Breaking changes
+
+- `SqlAdapter#query` has been renamed to `SqlAdapter#knex`
+- Options passed to `new SqlAdapter` are no longer passed directly to `knex(options)`, instead `knex` options must be nested under a `knexOpts` field in the `options` object passed to `new SqlAdapter`, so as to separate `knex` options from adapter options.
+- Now depends on js-data v3, no longer works with js-data v2
+- The signature for the `filterQuery` method has been changed. `filterQuery` no longer performs any select, but only as `where` modifier to an existing sqlBuilder instance that must be passed as the first argument to `filterQuery`.
+- Now you must import like this:
+
+    ```js
+    // CommonJS
+    var JSDataSql = require('js-data-sql')
+    var SqlAdapter = JSDataSql.SqlAdapter
+    var adapter = new SqlAdapter({...})
+    ```
+
+    ```js
+    // ES2015 modules
+    import {SqlAdapter} from 'js-data-sql'
+    const adapter = new SqlAdapter({...})
+    ```
+
+- `SqlAdapter` now extends the base `Adapter` class, which does the heavy lifting for
+eager-loading relations and adds a multitude of lifecycle hook methods.
+
 ##### 0.11.2 - 19 October 2015
 
 - Fixed build
