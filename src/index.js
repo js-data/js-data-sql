@@ -734,7 +734,11 @@ export const version = '<%= version %>'
 /**
  * {@link SqlAdapter} class.
  *
- * @example
+ * @example <caption>CommonJS</caption>
+ * const SqlAdapter = require('js-data-sql').SqlAdapter;
+ * const adapter = new SqlAdapter();
+ *
+ * @example <caption>ES2015 Modules</caption>
  * import { SqlAdapter } from 'js-data-sql';
  * const adapter = new SqlAdapter();
  *
@@ -758,21 +762,6 @@ export const version = '<%= version %>'
  * const adapter = new SqlAdapter();
  *
  * @module js-data-sql
- */
-
-/**
- * {@link SqlAdapter} class.
- *
- * @example <caption>CommonJS</caption>
- * const SqlAdapter = require('js-data-sql').SqlAdapter;
- * const adapter = new SqlAdapter();
- *
- * @example <caption>ES2015 Modules</caption>
- * import { SqlAdapter } from 'js-data-sql';
- * const adapter = new SqlAdapter();
- *
- * @name module:js-data-sql.SqlAdapter
- * @see SqlAdapter
  */
 
 /**

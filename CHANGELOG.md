@@ -1,3 +1,8 @@
+##### 1.0.1 - 18 August 2017
+
+###### Bug fixes
+- Remove `mysql` from dependencies
+
 ##### 1.0.0 - 17 August 2017
 
 Stable 1.0.0 release
