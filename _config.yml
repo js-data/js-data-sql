@@ -1,0 +1,8 @@
+title: Js-data-sql
+description: Postgres/MySQL/MariaDB/SQLite3 adapter for js-data
+google_analytics: 
+show_downloads: true
+theme: jekyll-theme-minimal
+
+gems:
+  - jekyll-mentions
